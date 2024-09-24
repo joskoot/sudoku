@@ -1,12 +1,23 @@
 #lang racket
 
 #|
-(procedure : (sudoku str)
-str : string as described below
+(procedure : (sudoku ‹str›)
+‹str› : string as described below
 
 The string must contain 81 elements separated by white space.
-Each item other than a natural number n with (<= 1 n 9) reprsents absence of a digit.
+An element must not contain white space.
+A digit is a natural number n (<= 1 n 9).
+Each element other than digit represents the absence of a digit.
+An absent or non-digit is printed as `•´.
 All solutions are computed and printed.
+
+A completed sudoku board has 81 fields in 9 rows and 9 colums,
+each field containing a digit n (<= 1 n 9), however with the following restrictions:
+  A column or row must not contain a duplicate digit.
+  There are 9 disjunct subboards of 3 by 3 adjacent rows/columns and
+  no duplicate digit is allowed in a subboard.
+
+Argument ‹str› is checked to satisfy the restrictions.
 |#
 
 (require fmt/fmt) ; Install from https://github.com/joskoot/fmt
@@ -194,3 +205,4 @@ All solutions are computed and printed.
    • • 4   • 8 •   • 3 •")
      
      
+
