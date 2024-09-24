@@ -1,0 +1,2 @@
+# sudoku
+Simple sudoku solutioner
