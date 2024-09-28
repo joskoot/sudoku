@@ -46,6 +46,20 @@ digits either. The goal of the puzzle is to fill all empty fields with non zero 
 retaining the restrictions that a row, column or subboard must not contain duplicates. Rows and
 columns are numbered from 1 up to and including 9.
 
+   -------------------------   Each dot stand for a digit or a mark that the field is empty
+   | • • • | • • • | • • • |
+   | • • • | • • • | • • • |
+   | • • • | • • • | • • • |
+   -------------------------
+   | • • • | • • • | • • • |
+   | • • • | • • • | • • • |
+   | • • • | • • • | • • • |
+   -------------------------
+   | • • • | • • • | • • • |
+   | • • • | • • • | • • • |
+   | • • • | • • • | • • • |
+   -------------------------
+
    (procedure : (sudoku . ‹lst›) --> void?
    ‹lst› : list of 81 elements
 
@@ -272,15 +286,20 @@ all digits still allowed in this field.
     • • 8   5 • •   • 1 •
     • 9 •   • • •   4 • •)
 
-  ; The previous example rapidly computes the unique solution,
-  ; but takes some time to check that there are no more solutions.
-  ; Imitting digit 4 in the last row results in 849 solutions:
+  ; For the previous example the unique solution is computed rapidly,
+  ; but it takes some time to check that there are no more solutions.
+  ; Omitting digit 2 in column 7 of row 3 yields 3219 solutions.
+  ; On my PC this takes almost 3.5 minutes.
+  ; It is not difficult to parallelize the computation,
+  ; but this obscures the essentials of the algorithm in procedure solve.
+
+  (define x 'x)
 
   (parameterize ((count-only #t))
     (sudoku
       8 • •   • • •   • • •
       • • 3   6 • •   • • •
-      • 7 •   • 9 •   2 • •
+      • 7 •   • 9 •   x • •
   
       • 5 •   • • 7   • • •
       • • •   • 4 5   7 • •
@@ -288,7 +307,7 @@ all digits still allowed in this field.
   
       • • 1   • • •   • 6 8
       • • 8   5 • •   • 1 •
-      • 9 •   • • •   • • •))
+      • 9 •   • • •   4 • •))
 
   ; The following example would list and count all complete sudoku boards.
   ; Do not uncomment it, for it would last too long and
