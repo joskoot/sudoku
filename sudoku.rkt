@@ -17,22 +17,12 @@
     contract-out
     ->
     any/c
+    and/c
     case->))
 
 (provide
   (contract-out
-    (sudoku
-      (->
-        any/c any/c any/c any/c any/c any/c any/c any/c any/c
-        any/c any/c any/c any/c any/c any/c any/c any/c any/c
-        any/c any/c any/c any/c any/c any/c any/c any/c any/c
-        any/c any/c any/c any/c any/c any/c any/c any/c any/c
-        any/c any/c any/c any/c any/c any/c any/c any/c any/c
-        any/c any/c any/c any/c any/c any/c any/c any/c any/c
-        any/c any/c any/c any/c any/c any/c any/c any/c any/c
-        any/c any/c any/c any/c any/c any/c any/c any/c any/c
-        any/c any/c any/c any/c any/c any/c any/c any/c any/c
-        void?))
+    (sudoku (-> (and/c list? (λ (lst) (= (length lst) 81))) void?))
     (examples (-> void?))
     (count-only (case-> (-> any/c void?) (-> boolean?)))))
 
@@ -60,19 +50,40 @@ columns are numbered from 1 up to and including 9.
    | • • • | • • • | • • • |
    -------------------------
 
-   (procedure : (sudoku . ‹lst›) --> void?
-   ‹lst› : list of 81 elements
+======================================================================================================
+
+procedure : (sudoku ‹lst›) --> void?
+‹lst› : list of 81 elements
 
 Each subsequent contiguous sublist of 9 elements of ‹lst› is considered to be a row. Corresponding
 elements of rows form columns. Argument ‹lst› is checked to satisfy the restrictions. A field
 containing something else than a non zero decimal digit is considered to be empty. The ‹lst› does not
-necesseraly represent a well composed puzzle with one solution only. All solutions are computed and
-printed.
+necesseraly represent a well composed puzzle with one solution only. All solutions are computed.
+If parameter count-only is true the solutions are printed.
+
+======================================================================================================
+
+parameter : (count-only) --> boolean?
+            (count-only ‹yes/no›) --> void?
+‹yes/no› : any/c
+
+If this parameter is true, solutions are not printed.
+Argument ‹yes/no› is coerced to boolean as in (and ‹yes/no› #t).
+
+======================================================================================================
+
+procedure : (examples) --> void?
+
+Runs some examples (may take some minutes).
+
+======================================================================================================
 
 There are 6670903752021072936960 fully complete boards. Theoretically they can be generated and
 counted by calling procedure sudoku without any digit specified, but in practice the large number
 makes this impossible. I don't know of a fast method of computing this number.
 See https://en.wikipedia.org/wiki/Sudoku and https://en.wikipedia.org/wiki/Mathematics_of_Sudoku.
+
+======================================================================================================
 
 The board is kept in a vector. A row and column index is converted to a vector index as
 
@@ -90,9 +101,7 @@ all digits still allowed in this field.
 (define in-index (range 81))
 (define in-digit (range 1 10))
 (define (digit? d) (and (natural? d) (<= 1 d 9)))
-
-(define (row/col->index row col)
-  (+ (* 9 (sub1 row)) (sub1 col)))
+(define (row/col->index row col) (+ (* 9 (sub1 row)) (sub1 col)))
 
 (define board-ref
   (case-lambda
@@ -103,20 +112,6 @@ all digits still allowed in this field.
   (case-lambda
     ((board row col value) (vector-set! board (row/col->index row col) value))
     ((board index value) (vector-set! board index value))))
-
-(define neighbours
-  (let ((board (build-vector 81 (λ (index) (mutable-seteqv)))))
-    (for* ((row in-digit) (col in-digit))
-      (for ((r in-digit) #:unless (= r row))
-        (set-add! (board-ref board row col) (row/col->index r col)))
-      (for ((c in-digit) #:unless (= c col))
-        (set-add! (board-ref board row col) (row/col->index row c)))
-      (let*
-        ((r (add1 (* 3 (quotient (sub1 row) 3))))
-         (c (add1 (* 3 (quotient (sub1 col) 3)))))
-        (for* ((r (in-range r (+ r 3))) (c (in-range c (+ c 3))) #:unless (and (= r row) (= c col)))
-          (set-add! (board-ref board row col) (row/col->index r c)))))
-    board))
 
 (define (board? obj) (and (list? obj) (= (length obj) 81)))
 
@@ -140,6 +135,24 @@ all digits still allowed in this field.
 
 (define (convert-zero d) (if (digit? d) d '•))
 
+(define neighbours
+  (let ((board (build-vector 81 (λ (index) (mutable-seteqv)))))
+    (for* ((row in-digit) (col in-digit))
+      (for ((r in-digit) #:unless (= r row))
+        (set-add! (board-ref board row col) (row/col->index r col)))
+      (for ((c in-digit) #:unless (= c col))
+        (set-add! (board-ref board row col) (row/col->index row c)))
+      (let*
+        ((r (add1 (* 3 (quotient (sub1 row) 3))))
+         (c (add1 (* 3 (quotient (sub1 col) 3)))))
+        (for* ((r (in-range r (+ r 3))) (c (in-range c (+ c 3))) #:unless (and (= r row) (= c col)))
+          (set-add! (board-ref board row col) (row/col->index r c)))))
+    board))
+
+(define (already-in-neighbour? d index board)
+  (for/or ((i (in-set (board-ref neighbours index))))
+    (= (board-ref board i) d)))
+
 (define (solve board)
   (define nr-of-solutions 0)
   (define (solve empty-fields)
@@ -158,11 +171,7 @@ all digits still allowed in this field.
   (solve (for/list ((index in-index) #:unless (digit? (board-ref board index))) index))
   nr-of-solutions)
 
-(define (already-in-neighbour? d index board)
-  (for/or ((i (in-set (board-ref neighbours index))))
-    (= (board-ref board i) d)))
-
-(define (sudoku . lst)
+(define (sudoku lst)
   (printf "Starting sudoku:\n~
            Initial board:\n\n")
   (define board (read-board lst))
@@ -176,115 +185,100 @@ all digits still allowed in this field.
 
 ;=====================================================================================================
 ; Examples
-; Notice that ‘•’ is not a period. It is acceptable as a readable item.
+; ‘•’ is used for empty fields.
 
 (define (examples)
 
-  (define • '•)
+  (sudoku
+    '(1 2 3   4 5 6   7 8 9
+      4 5 6   7 8 9   1 2 3
+      7 8 9   1 2 3   4 5 6
+
+      2 3 1   5 6 4   8 9 7
+      5 6 4   8 9 7   2 3 1
+      8 9 7   2 3 1   5 6 4
+
+      3 1 2   6 4 5   9 7 8
+      6 4 5   9 7 8   3 1 2
+      9 7 8   3 1 2   6 4 5))
 
   (sudoku
-    1 2 3   4 5 6   7 8 9
-    4 5 6   7 8 9   1 2 3
-    7 8 9   1 2 3   4 5 6
+    '(1 2 3   4 5 6   7 8 9
+      4 5 6   7 8 9   1 2 3
+      7 8 9   1 2 3   4 5 6
 
-    2 3 1   5 6 4   8 9 7
-    5 6 4   8 9 7   2 3 1
-    8 9 7   2 3 1   5 6 4
+      2 3 1   5 6 4   8 9 7
+      5 6 4   8 9 7   2 3 1
+      8 9 7   2 3 1   5 6 4
 
-    3 1 2   6 4 5   9 7 8
-    6 4 5   9 7 8   3 1 2
-    9 7 8   3 1 2   6 4 5)
-
-  (sudoku
-    1 2 3   4 5 6   7 8 9
-    4 5 6   7 8 9   1 2 3
-    7 8 9   1 2 3   4 5 6
-
-    2 3 1   5 6 4   8 9 7
-    5 6 4   8 9 7   2 3 1
-    8 9 7   2 3 1   5 6 4
-
-    3 1 2   6 4 5   9 7 8
-    • • •   • • •   • • •
-    • • •   • • •   • • •)
+      3 1 2   6 4 5   9 7 8
+      • • •   • • •   • • •
+      • • •   • • •   • • •))
      
   (sudoku
-    1 2 3   4 5 6   7 8 9
-    4 5 6   7 8 9   1 2 3
-    7 8 9   1 2 3   4 5 6
+    '(1 2 3   4 5 6   7 8 9
+      4 5 6   7 8 9   1 2 3
+      7 8 9   1 2 3   4 5 6
 
-    2 3 1   5 6 4   8 9 7
-    5 6 4   8 9 7   2 3 1
-    8 9 7   2 3 1   5 6 4
+      2 3 1   5 6 4   8 9 7
+      5 6 4   8 9 7   2 3 1
+      8 9 7   2 3 1   5 6 4
 
-    3 1 2   6 4 5   9 7 8
-    • • •   • • •   3 1 2
-    • • •   • • •   • • •)
-     
-  (sudoku
-    1 2 3   4 5 6   7 8 9
-    4 5 6   7 8 9   1 2 3
-    7 8 9   1 2 3   4 5 6
-
-    2 3 1   5 6 4   8 9 7
-    5 6 4   8 9 7   2 3 1
-    8 9 7   2 3 1   5 6 4
-
-    3 1 2   6 4 5   9 7 8
-    • • •   • • •   3 • •
-    • • •   • • •   • • •)
+      3 1 2   6 4 5   9 7 8
+      • • •   • • •   3 • •
+      • • •   • • •   • • •))
 
   (sudoku
-    • • •   5 2 4   • • 6
-    9 3 •   • • •   • 7 •
-    • • •   • • •   • • •
+    '(• • •   5 2 4   • • 6
+      9 3 •   • • •   • 7 •
+      • • •   • • •   • • •
   
-    • • •   • • 3   • • •
-    2 8 •   • • •   • • •
-    • • 1   7 • •   4 • •
+      • • •   • • 3   • • •
+      2 8 •   • • •   • • •
+      • • 1   7 • •   4 • •
   
-    • • •   6 • •   1 • 7
-    • 9 •   • • •   • 2 •
-    • • 4   • 8 •   • 3 •)
+      • • •   6 • •   1 • 7
+      • 9 •   • • •   • 2 •
+      • • 4   • 8 •   • 3 •))
 
   (sudoku
-    5 3 •   • 7 •   • • •
-    6 • •   1 9 5   • • •
-    • 9 8   • • •   • 6 •
+    '(5 3 •   • 7 •   • • •
+      6 • •   1 9 5   • • •
+      • 9 8   • • •   • 6 •
   
-    8 • •   • 6 •   • • 3
-    4 • •   8 • 3   • • 1
-    7 • •   • 2 •   • • 6
+      8 • •   • 6 •   • • 3
+      4 • •   8 • 3   • • 1
+      7 • •   • 2 •   • • 6
   
-    • 6 •   • • •   2 8 •
-    • • •   4 1 9   • • 5
-    • • •   • 8 •   • 7 9)
+      • 6 •   • • •   2 8 •
+      • • •   4 1 9   • • 5
+      • • •   • 8 •   • 7 9))
 
   (sudoku
-    5 3 •   • 7 •   • • •
-    6 • •   1 9 5   • • •
-    • 9 8   • • •   • 6 •
+    '(5 3 •   • 7 •   • • •
+      6 • •   1 9 5   • • •
+      • 9 8   • • •   • 6 •
   
-    8 • •   • 6 •   • • 3
-    4 • •   8 • 3   • • 1
-    7 • •   • 2 •   • • 6
+      8 • •   • 6 •   • • 3
+      4 • •   8 • 3   • • 1
+      7 • •   • 2 •   • • 6
   
-    • 6 •   • • •   2 8 •
-    • • •   4 1 9   • • •
-    • • •   • 8 •   • • •)
+      • 6 •   • • •   2 8 •
+      • • •   4 1 9   • • •
+      • • •   • 8 •   • • •))
 
   (sudoku
-    8 • •   • • •   • • •
-    • • 3   6 • •   • • •
-    • 7 •   • 9 •   2 • •
+    '(8 • •   • • •   • • •
+      • • 3   6 • •   • • •
+      • 7 •   • 9 •   2 • •
   
-    • 5 •   • • 7   • • •
-    • • •   • 4 5   7 • •
-    • • •   1 • •   • 3 •
+      • 5 •   • • 7   • • •
+      • • •   • 4 5   7 • •
+      • • •   1 • •   • 3 •
   
-    • • 1   • • •   • 6 8
-    • • 8   5 • •   • 1 •
-    • 9 •   • • •   4 • •)
+      • • 1   • • •   • 6 8
+      • • 8   5 • •   • 1 •
+      • 9 •   • • •   4 • •))
 
   ; For the previous example the unique solution is computed rapidly,
   ; but it takes some time to check that there are no more solutions.
@@ -297,17 +291,17 @@ all digits still allowed in this field.
 
   (parameterize ((count-only #t))
     (sudoku
-      8 • •   • • •   • • •
-      • • 3   6 • •   • • •
-      • 7 •   • 9 •   x • •
+      '(8 • •   • • •   • • •
+        • • 3   6 • •   • • •
+        • 7 •   • 9 •   x • •
   
-      • 5 •   • • 7   • • •
-      • • •   • 4 5   7 • •
-      • • •   1 • •   • 3 •
+        • 5 •   • • 7   • • •
+        • • •   • 4 5   7 • •
+        • • •   1 • •   • 3 •
   
-      • • 1   • • •   • 6 8
-      • • 8   5 • •   • 1 •
-      • 9 •   • • •   4 • •))
+        • • 1   • • •   • 6 8
+        • • 8   5 • •   • 1 •
+        • 9 •   • • •   4 • •)))
 
   ; The following example would list and count all complete sudoku boards.
   ; Do not uncomment it, for it would last too long and
@@ -315,17 +309,16 @@ all digits still allowed in this field.
 
   #;
   (sudoku
-    • • •   • • •   • • •
-    • • •   • • •   • • •
-    • • •   • • •   • • •
+    '(• • •   • • •   • • •
+      • • •   • • •   • • •
+      • • •   • • •   • • •
   
-    • • •   • • •   • • •
-    • • •   • • •   • • •
-    • • •   • • •   • • •
+      • • •   • • •   • • •
+      • • •   • • •   • • •
+      • • •   • • •   • • •
   
-    • • •   • • •   • • •
-    • • •   • • •   • • •
-    • • •   • • •   • • •
-    ))
+      • • •   • • •   • • •
+      • • •   • • •   • • •
+      • • •   • • •   • • •)))
 
 ;=====================================================================================================
