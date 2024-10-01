@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require (only-in "sudoku.rkt" examples))
+(require (only-in "sudoku.rkt" run-examples))
 
-(examples)
+(run-examples)
 
