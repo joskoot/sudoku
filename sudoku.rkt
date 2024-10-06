@@ -1,50 +1,102 @@
 #|====================================================================================================
 
-; A brute force recursive sudoku solver
+A brute force recursive sudoku solver
 
 ======================================================================================================
 
-Sudoku puzzles of the following type are considered: a puzzle consists of a square board of 9 rows and
-9 columns, in total 81 fields. Some of the fields contain a non zero decimal digit. The other fields
-are empty. However, a row does not contain a duplicate digit, a column neither. There are 9 disjunct
-convex subboards, each with 9 fields in 3 adjacent rows and 3 adjacent columns. See the figure below.
-A subboard does not contain duplicate digits either. The goal of the puzzle is to fill all empty
-fields with non zero decimal digits while retaining the restrictions that a row, column or subboard
-must not contain duplicates. Rows and columns are numbered from 1 up to and including 9.
+Sudoku puzzles of the following type are considered: a square board of 9 rows and 9 columns, in total
+81 fields. Some of the fields contain a non zero decimal digit. The other fields are empty. However,
+a row does not contain a duplicate digit, a column neither. There are 9 disjunct convex subboards,
+each with 9 fields in 3 adjacent rows and 3 adjacent columns. See the figure below. A subboard does
+not contain duplicate digits either. The goal of the puzzle is to fill all empty fields with non zero
+decimal digits while retaining the restriction that a row, column or subboard must not contain
+duplicates. Rows and columns indices are numbered from 1 up to and including 9.
 
        1 2 3   4 5 6   7 8 9
-     -------------------------   Each dot stand for a digit or a mark that the field is empty
-   1 | • • • | • • • | • • • |
-   2 | • • • | • • • | • • • |
+     -------------------------   Each dot stand for a field, either empty or containing a non zero
+   1 | • • • | • • • | • • • |   digit such that rows, columns and sub boards have no duplicates.
+   2 | • • • | • • • | • • • |   
    3 | • • • | • • • | • • • |
-   -------------------------
+     -------------------------
    4 | • • • | • • • | • • • |
    5 | • • • | • • • | • • • |
    6 | • • • | • • • | • • • |
-   -------------------------
+     -------------------------
    7 | • • • | • • • | • • • |
    8 | • • • | • • • | • • • |
    9 | • • • | • • • | • • • |
      -------------------------
 
+In a completed board each row, each column and each sub board contains all digits from 1 up to and
+including 9. There are 6670903752021072936960 fully complete boards. Theoretically they can be
+generated and counted by calling procedure sudoku with all fields empty, but in practice the large
+number makes this impossible. I don't know of a fast method of computing this number.
+See https://en.wikipedia.org/wiki/Sudoku and https://en.wikipedia.org/wiki/Mathematics_of_Sudoku and
+https://people.math.sc.edu/girardi/sudoku/enumerate.pdf. Given a solution, combination of the
+following operations yield (3!)↑8 = 1679616 distinct correctly filled boards:
+
+   Permutation of rows 1, 2 and 3; factor 3!;
+   Permutation of rows 4, 5 and 6; factor 3!;
+   Permutation of rows 7, 8 and 9; factor 3!;
+   Permutation of columns 1, 2 and 3; factor 3!;
+   Permutation of columns 4, 5 and 6; factor 3!;
+   Permutation of columns 7, 8 and 9; factor 3!;
+   Permutation of the three rows of sub boards; factor 3!;
+   Permutation of the three columns of sub boards; factor 3!.
+
+We have 6670903752021072936960 / (3!)↑8 = 3971683856322560 = (2↑12)×5×7×27704267971.
+(‘↑’ indicates exponentiation). Not all incomplete boards have a solution, For example:
+
+   (parameterize ((count-only #t))
+     (sudoku
+      '(• 2 3 • • • • • •
+        • 7 9 • • • • • •
+        • • • 9 • • 4 1 •
+        • 3 2 1 4 9 8 6 •
+        • 9 7 • • • • • •
+        • • • • • • • • •
+        • • • • • • • • •
+        • • • • • • • • •
+        • • • • • • • • •))) ; Prints:
+   
+   Starting sudoku:
+   Initial board:
+   
+   • 2 3 • • • • • • 
+   • 7 9 • • • • • • 
+   • • • 9 • • 4 1 • 
+   • 3 2 1 4 9 8 6 • 
+   • 9 7 • • • • • • 
+   • • • • • • • • • 
+   • • • • • • • • • 
+   • • • • • • • • • 
+   • • • • • • • • • 
+
+   Finished:
+   Nr of solutions: 0
+   CPU time: about 10.921 seconds
+
 ======================================================================================================
 
-procedure : (sudoku ‹lst›) --> void?
-‹lst› : list of 81 elements
+Procedure : (sudoku ‹lst›) --> void?
+‹lst› : list of 81 elements of arbitrary type
 
 Each subsequent contiguous sublist of 9 elements of ‹lst› is considered to be a row. Corresponding
 elements of rows form columns. Argument ‹lst› is checked to satisfy the restrictions. A field
 containing something else than a non zero decimal digit is considered to be empty. The ‹lst› does not
 necesseraly represent a well composed puzzle with one solution only. All solutions are computed.
-If parameter count-only is #f the solutions are printed.
+The solutions are counted and if parameter count-only is #f they are printed too.
 
-If parameter count-only is true or the current output port is not connected to memory, the procedure
-runs in constant space. However, with parameter count-only set to #f and the current output port
-connected to a file, the file may become very long or even exceed the available space of the device.
+If parameter count-only is true or the current output port does not gather output in memory, the
+procedure runs in constant space. However, with parameter count-only set to #f and the current output
+port connected to a file, memory consumption remains bound, but the file may become very long or even
+exceed the space available in the device. With count-only set to #f and output gathered in memory
+the number of solutions may be too large to fit in memory. However, by definition a well composed
+puzzle has one solution only.
 
 ======================================================================================================
 
-parameter : (count-only) --> boolean?
+Parameter : (count-only) --> boolean?
             (count-only ‹yes/no›) --> void?
 ‹yes/no› : any/c
 
@@ -53,29 +105,17 @@ Argument ‹yes/no› is coerced to a boolean: (and ‹yes/no› #t).
 
 ======================================================================================================
 
-procedure : (run-examples) --> void?
-
-Runs some examples (may take some minutes).
-
-======================================================================================================
-
-There are 6670903752021072936960 fully complete boards. Theoretically they can be generated and
-counted by calling procedure sudoku without any digit specified, but in practice the large number
-makes this impossible. Counting the solutions at a rate of 1e9 per second, would last more than two
-centories. I don't know of a fast method of computing this number. 
-See https://en.wikipedia.org/wiki/Sudoku and https://en.wikipedia.org/wiki/Mathematics_of_Sudoku.
-
-======================================================================================================
-
 The board is kept in a mutable vector. A row and column index is converted to a vector index as:
 
    (+ (* 9 (sub1 row)) (sub1 column))
 
-Empty fields are marked with 0. Variable neighbours contains a vector of 81 sets of indices, the set
-at index i containing the indices of fields that must not contain the same digit as field i. Procedure
-solver does a two level loop, the outer level running along all empty fields and the inner level along
-all digits still allowed in this field. Each set has 20 elements, 8 in the row, 8 in the column and
-4 additional ones in the subboard.
+Empty fields are marked with 0 and printed as ‘•’. Variable neighbours contains a vector of 81 sets
+of indices, the set at index i containing the indices of fields that must not contain the same digit
+as field i. Procedure solver does a two level loop, the outer level running along empty fields and
+the inner level along all digits still allowed in this field. Each field has 20 neighbours, 8 in its
+row, 8 in its column and 4 additional ones in its subboard. The outer loop selects a field with the
+least number of digits still allowed. This speeds up by recursively reducing the number of cycles in
+the inner loop.
 
 ====================================================================================================|#
 
@@ -83,12 +123,10 @@ all digits still allowed in this field. Each set has 20 elements, 8 in the row, 
 
 (require
   (only-in racket
-    range
     natural?
     mutable-seteqv
     set-add!
     in-set
-    ~r
     contract-out
     any/c
     and/c
@@ -98,12 +136,11 @@ all digits still allowed in this field. Each set has 20 elements, 8 in the row, 
 (provide
   (contract-out
     (sudoku (-> (and/c list? (λ (lst) (= (length lst) 81))) void?))
-    (run-examples (-> void?))
     (count-only (case-> (-> any/c void?) (-> boolean?)))))
 
 (define count-only (make-parameter #f (λ (x) (and x #t)) 'count-only))
-(define in-index (range 81))
-(define in-digit (range 1 10))
+(define in-indices (in-range 81))
+(define in-digits (in-range 1 10))
 (define (digit? d) (and (natural? d) (<= 1 d 9)))
 (define (row/col->index row col) (+ (* 9 (sub1 row)) (sub1 col)))
 (define (convert-zero d) (if (digit? d) d '•))
@@ -122,28 +159,29 @@ all digits still allowed in this field. Each set has 20 elements, 8 in the row, 
 (define (fill-board input)
   ; (unless (board? input) (raise-argument-error 'read-board "board?" input))
   (set! board (make-vector 81)) ; Initially filled with zeros.
-  (for ((index in-index) (d (in-list input)))
+  (for ((index in-indices) (d (in-list input)))
     (when (digit? d) ; Leave empty fields zero.
       (define ns (vector-ref neighbours index))
       (for ((n (in-set ns)))
-        (when (eqv? d (board-ref n))
+        (when (= d (board-ref n))
           (error 'read-board "neigbouring digit: ~s at indices ~s ~s" d index n)))
       (board-set! index d))))
 
 (define (print-board)
-  (for ((row in-digit))
-    (for ((col in-digit))  (printf "~s " (convert-zero (board-ref row col))))
+  (for ((row in-digits))
+    (for ((col in-digits))  (printf "~s " (convert-zero (board-ref row col))))
     (newline))
   (newline))
 
-; Two fields are neighbours if in the same row, the same column or the same subboard.
+; Two fields are neighbours if in the same row, the same column or the same subboard. neighbours is
+; a vector of 81 elements, element i being the set of the indices of all neighbours of field i.
 
 (define neighbours
   (let ((neighbour-vector (build-vector 81 (λ (index) (mutable-seteqv)))))
-    (for* ((row in-digit) (col in-digit))
-      (for ((r in-digit) #:unless (= r row))
+    (for* ((row in-digits) (col in-digits))
+      (for ((r in-digits) #:unless (= r row))
         (set-add! (vector-ref neighbour-vector (row/col->index row col)) (row/col->index r col)))
-      (for ((c in-digit) #:unless (= c col))
+      (for ((c in-digits) #:unless (= c col))
         (set-add! (vector-ref neighbour-vector (row/col->index row col)) (row/col->index row c)))
       (let*
         ((r (add1 (* 3 (quotient (sub1 row) 3))))
@@ -153,7 +191,9 @@ all digits still allowed in this field. Each set has 20 elements, 8 in the row, 
     neighbour-vector))
 
 (define (already-in-neighbour? d index)
-  ; Does at most 20 iterations because each field has 20 neighbours.
+  ; Does at most 20 iterations because each field has 20 neighbours,
+  ; 8 in its row, 8 in its column and 4 additional ones in its sub board
+  ; not covered by the restriction in its row and column. 
   (for/or ((i (in-set (vector-ref neighbours index))))
     (= (board-ref i) d)))
 
@@ -165,15 +205,43 @@ all digits still allowed in this field. Each set has 20 elements, 8 in the row, 
        (unless (count-only) (print-board))
        (set! nr-of-solutions (add1 nr-of-solutions)))
       (else
-        (define index (car empty-fields))
-        (unless (digit? (board-ref index))
-          (for ((d in-digit))
-            (unless (already-in-neighbour? d index)
-              (board-set! index d)
-              (solve (cdr empty-fields))
-              (board-set! index 0)))))))
-  (solve (for/list ((index in-index) #:unless (digit? (board-ref index))) index))
+        (define-values (index digits) (find-least-empty-field empty-fields))
+        (when (and index (not (null? digits)))
+          (for ((d (in-list digits)))
+            (board-set! index d)
+            (solve (remove index empty-fields))
+            (board-set! index 0))))))
+  (define empty-fields (for/list ((index in-indices) #:unless (digit? (board-ref index))) index))
+  (solve empty-fields)
   nr-of-solutions)
+
+(define (find-least-empty-field empty-fields)
+  (find-least-field
+    (for/list ((field (in-list empty-fields)))
+      (cons field
+        (for/list
+          ((d in-digits)
+           #:when (for/and ((nb (in-set (vector-ref neighbours field))))
+                    (not (= (board-ref nb) d))))
+          d)))))
+
+(define (find-least-field lst)
+  (cond
+    ((null? lst) (values #f #f))
+    (else
+      (define f (caar lst))
+      (define ds (cdar lst))
+      (let loop ((f f) (ds ds) (lst (cdr lst)) (n (length ds)))
+        (cond
+          ((null? lst) (values f ds))
+          (else
+            (define new-f (caar lst))
+            (define new-ds (cdar lst))
+            (define new-n (length new-ds))
+            (cond
+              ((zero? new-n) (values #f #f))
+              ((< new-n n) (loop new-f new-ds (cdr lst) new-n))
+              (else (loop f ds (cdr lst) n)))))))))
 
 (define (sudoku lst)
   (printf "Starting sudoku:\n~
@@ -185,144 +253,15 @@ all digits still allowed in this field. Each set has 20 elements, 8 in the row, 
   (printf "Finished:\n~
            Nr of solutions: ~s~n~
            CPU time: about ~a seconds~n~n"
-    (car n) (~r #:precision 3 (/ cpu 1000))))
+    (car n) (~r cpu)))
 
-;=====================================================================================================
-; Examples
-; ‘•’ is used for empty fields. It is not a period.
+(define (~r x)
+  (define-values (i f) (quotient/remainder x 1000))
+  (format "~s.~a" i (add-zeros f)))
 
-(define (run-examples)
-
-  (sudoku
-    '(1 2 3   4 5 6   7 8 9
-      4 5 6   7 8 9   1 2 3
-      7 8 9   1 2 3   4 5 6
-
-      2 3 1   5 6 4   8 9 7
-      5 6 4   8 9 7   2 3 1
-      8 9 7   2 3 1   5 6 4
-
-      3 1 2   6 4 5   9 7 8
-      6 4 5   9 7 8   3 1 2
-      9 7 8   3 1 2   6 4 5))
-
-  (sudoku
-    '(1 2 3   4 5 6   7 8 9
-      4 5 6   7 8 9   1 2 3
-      7 8 9   1 2 3   4 5 6
-
-      2 3 1   5 6 4   8 9 7
-      5 6 4   8 9 7   2 3 1
-      8 9 7   2 3 1   5 6 4
-
-      3 1 2   6 4 5   9 7 8
-      • • •   • • •   • • •
-      • • •   • • •   • • •))
-     
-  (sudoku
-    '(1 2 3   4 5 6   7 8 9
-      4 5 6   7 8 9   1 2 3
-      7 8 9   1 2 3   4 5 6
-
-      2 3 1   5 6 4   8 9 7
-      5 6 4   8 9 7   2 3 1
-      8 9 7   2 3 1   5 6 4
-
-      3 1 2   6 4 5   9 7 8
-      • • •   • • •   3 • •
-      • • •   • • •   • • •))
-
-  (sudoku
-    '(• • •   5 2 4   • • 6
-      9 3 •   • • •   • 7 •
-      • • •   • • •   • • •
-  
-      • • •   • • 3   • • •
-      2 8 •   • • •   • • •
-      • • 1   7 • •   4 • •
-  
-      • • •   6 • •   1 • 7
-      • 9 •   • • •   • 2 •
-      • • 4   • 8 •   • 3 •))
-
-  (sudoku
-    '(5 3 •   • 7 •   • • •
-      6 • •   1 9 5   • • •
-      • 9 8   • • •   • 6 •
-  
-      8 • •   • 6 •   • • 3
-      4 • •   8 • 3   • • 1
-      7 • •   • 2 •   • • 6
-  
-      • 6 •   • • •   2 8 •
-      • • •   4 1 9   • • 5
-      • • •   • 8 •   • 7 9))
-
-  (sudoku
-    '(5 3 •   • 7 •   • • •
-      6 • •   1 9 5   • • •
-      • 9 8   • • •   • 6 •
-  
-      8 • •   • 6 •   • • 3
-      4 • •   8 • 3   • • 1
-      7 • •   • 2 •   • • 6
-  
-      • 6 •   • • •   2 8 •
-      • • •   4 1 9   • • •
-      • • •   • 8 •   • • •))
-
-  (sudoku
-    '(8 • •   • • •   • • •
-      • • 3   6 • •   • • •
-      • 7 •   • 9 •   2 • •
-  
-      • 5 •   • • 7   • • •
-      • • •   • 4 5   7 • •
-      • • •   1 • •   • 3 •
-  
-      • • 1   • • •   • 6 8
-      • • 8   5 • •   • 1 •
-      • 9 •   • • •   4 • •))
-
-  ; For the previous example the unique solution is computed rapidly,
-  ; but it takes some time to check that there are no more solutions.
-  ; Omitting digit 2 in column 7 of row 3 yields 3219 solutions.
-  ; On my PC this takes almost 3.5 minutes.
-  ; It is not difficult to parallelize the computation,
-  ; but this would obscure the essentials of the algorithm in procedure solve.
-
-  (define x 'x)
-
-  (parameterize ((count-only #t))
-    (sudoku
-      '(8 • •   • • •   • • •
-        • • 3   6 • •   • • •
-        • 7 •   • 9 •   x • •
-  
-        • 5 •   • • 7   • • •
-        • • •   • 4 5   7 • •
-        • • •   1 • •   • 3 •
-  
-        • • 1   • • •   • 6 8
-        • • 8   5 • •   • 1 •
-        • 9 •   • • •   4 • •)))
-
-  ; The following example would count all complete sudoku boards.
-  ; Do not uncomment it, for it would last too long, although it would run in constant space.
-
-  #;
-  (parameterize ((count-only #t))
-    (sudoku
-      '(• • •   • • •   • • •
-        • • •   • • •   • • •
-        • • •   • • •   • • •
-  
-        • • •   • • •   • • •
-        • • •   • • •   • • •
-        • • •   • • •   • • •
-  
-        • • •   • • •   • • •
-        • • •   • • •   • • •
-        • • •   • • •   • • •))))
+(define (add-zeros f)
+  (define str (format "~s" f))
+  (define len (string-length str))
+  (string-append (make-string (- 3 len) #\0) str))
 
 ;=====================================================================================================
