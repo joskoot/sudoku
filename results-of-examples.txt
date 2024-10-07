@@ -1,7 +1,6 @@
 Welcome to DrRacket, version 8.14 [cs].
 Language: racket/base [custom]; memory limit: 16000 MB.
-
-Starting sudoku: 
+Starting sudoku:
 Initial board:
 
 • 2 3 • • • • • • 
@@ -16,7 +15,7 @@ Initial board:
 
 Finished:
 Nr of solutions: 0
-CPU time: about 0.046 seconds
+CPU time: about 0.031 seconds
 
 Starting sudoku:
 Initial board:
@@ -203,7 +202,7 @@ Solutions:
 
 Finished:
 Nr of solutions: 4
-CPU time: about 0.000 seconds
+CPU time: about 0.062 seconds
 
 Starting sudoku:
 Initial board:
@@ -232,7 +231,7 @@ Solutions:
 
 Finished:
 Nr of solutions: 1
-CPU time: about 2.109 seconds
+CPU time: about 2.125 seconds
 
 Starting sudoku:
 Initial board:
@@ -339,7 +338,7 @@ Solutions:
 
 Finished:
 Nr of solutions: 1
-CPU time: about 6.328 seconds
+CPU time: about 6.828 seconds
 
 Starting sudoku:
 Initial board:
@@ -356,6 +355,6 @@ Initial board:
 
 Finished:
 Nr of solutions: 3219
-CPU time: about 67.859 seconds
+CPU time: about 69.203 seconds
 
 > 

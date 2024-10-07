@@ -125,10 +125,10 @@
     • 9 •   • • •   4 • •))
 
 ; For the previous example the unique solution is computed rapidly,
-; but it takes some time to check that there are no more solutions.
+; but it takes some seconds to check that there are no more solutions.
 ; Omitting digit 2 in column 7 of row 3 yields 3219 solutions.
-; On my PC this takes about 3.5 minutes.
-; It is not difficult to parallelize the computation,
+; On my PC this takes somewhat more than a minute.
+; It is somewhat complicated, but not difficult to parallelize the computation,
 ; but this would obscure the essentials of the algorithm in procedure solve.
 
 (parameterize ((count-only #t))

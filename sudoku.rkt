@@ -74,7 +74,7 @@ We have 6670903752021072936960 / (3!)↑8 = 3971683856322560 = (2↑12)×5×7×2
 
    Finished:
    Nr of solutions: 0
-   CPU time: about 10.921 seconds
+   CPU time: about 0.015 seconds
 
 ======================================================================================================
 
@@ -111,11 +111,12 @@ The board is kept in a mutable vector. A row and column index is converted to a 
 
 Empty fields are marked with 0 and printed as ‘•’. Variable neighbours contains a vector of 81 sets
 of indices, the set at index i containing the indices of fields that must not contain the same digit
-as field i. Procedure solver does a two level loop, the outer level running along empty fields and
-the inner level along all digits still allowed in this field. Each field has 20 neighbours, 8 in its
-row, 8 in its column and 4 additional ones in its subboard. The outer loop selects a field with the
-least number of digits still allowed. This speeds up by recursively reducing the number of cycles in
-the inner loop.
+as field i. Procedure solver does a two level loop, the outer level recursively along empty fields and
+the inner level along all digits still allowed in the currently selected field. Each field has 20
+neighbours, 8 in its row, 8 in its column and 4 additional ones in its subboard. The outer recursion
+selects a field with the least number of digits still allowed. This speeds up by reducing the number
+of cycles in the inner loop, although some time is lost because at every level of recursion the field
+to be selected must be looked for. Much more time is gained than lost.
 
 ====================================================================================================|#
 
@@ -206,6 +207,8 @@ the inner loop.
        (set! nr-of-solutions (add1 nr-of-solutions)))
       (else
         (define-values (index digits) (find-least-empty-field empty-fields))
+        ; Backtrack when the tried digits prohibit a solution,
+        ; id est, when there is a field whose neighbours already have all 9 digits.
         (when (and index (not (null? digits)))
           (for ((d (in-list digits)))
             (board-set! index d)
