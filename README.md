@@ -1,3 +1,3 @@
 # sudoku
 Simple sudoku solutioner\
-Finds all solutions.
+Finds all solutions. 
