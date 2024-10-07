@@ -1,7 +1,7 @@
 Welcome to DrRacket, version 8.14 [cs].
 Language: racket/base [custom]; memory limit: 16000 MB.
 
-Starting sudoku:
+Starting sudoku: 
 Initial board:
 
 • 2 3 • • • • • • 
