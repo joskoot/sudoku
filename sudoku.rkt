@@ -10,7 +10,7 @@ a row does not contain a duplicate digit, a column neither. There are 9 disjunct
 each with 9 fields in 3 adjacent rows and 3 adjacent columns. See the figure below. A subboard does
 not contain duplicate digits either. The goal of the puzzle is to fill all empty fields with non zero
 decimal digits while retaining the restriction that a row, column or subboard must not contain
-duplicates. Rows and columns indices are numbered from 1 up to and including 9.
+duplicates. Rows and columns are numbered from 1 up to and including 9.
 
        1 2 3   4 5 6   7 8 9
      -------------------------   Each dot stand for a field, either empty or containing a non zero
@@ -45,7 +45,9 @@ following operations yield (3!)↑8 = 1679616 distinct correctly filled boards:
    Permutation of the three columns of sub boards; factor 3!.
 
 We have 6670903752021072936960 / (3!)↑8 = 3971683856322560 = (2↑12)×5×7×27704267971.
-(‘↑’ indicates exponentiation). Not all incomplete boards have a solution, For example:
+(‘↑’ indicates exponentiation).
+
+Not all incomplete boards have a solution, For example:
 
    (parameterize ((count-only #t))
      (sudoku
@@ -139,6 +141,38 @@ to be selected must be looked for. Much more time is gained than lost.
     (sudoku (-> (and/c list? (λ (lst) (= (length lst) 81))) void?))
     (count-only (case-> (-> any/c void?) (-> boolean?)))))
 
+(define (sudoku lst)
+  (printf "Starting sudoku:\n~
+           Initial board:\n\n")
+  (fill-board lst)
+  (print-board)
+  (unless (count-only) (displayln "Solutions:\n"))
+  (define-values (|(n)| cpu real gc) (time-apply solve '()))
+  (printf "Finished:\n~
+           Nr of solutions: ~s~n~
+           CPU time: about ~a seconds~n~n"
+    (car |(n)|) (~r cpu)))
+
+(define (solve)
+  (define nr-of-solutions 0)
+  (define (solve empty-fields)
+    (cond
+      ((null? empty-fields)
+       (unless (count-only) (print-board))
+       (set! nr-of-solutions (add1 nr-of-solutions)))
+      (else
+        (define-values (index digits) (find-least-empty-field empty-fields))
+        ; Backtrack when the tried digits prohibit a solution,
+        ; id est, when there is a field whose neighbours already have all 9 digits.
+        (when (and index (not (null? digits)))
+          (for ((d (in-list digits)))
+            (board-set! index d)
+            (solve (remove index empty-fields))
+            (board-set! index 0))))))
+  (define empty-fields (for/list ((index in-indices) #:unless (digit? (board-ref index))) index))
+  (solve empty-fields)
+  nr-of-solutions)
+
 (define count-only (make-parameter #f (λ (x) (and x #t)) 'count-only))
 (define in-indices (in-range 81))
 (define in-digits (in-range 1 10))
@@ -191,33 +225,6 @@ to be selected must be looked for. Much more time is gained than lost.
           (set-add! (vector-ref neighbour-vector (row/col->index row col)) (row/col->index r c)))))
     neighbour-vector))
 
-(define (already-in-neighbour? d index)
-  ; Does at most 20 iterations because each field has 20 neighbours,
-  ; 8 in its row, 8 in its column and 4 additional ones in its sub board
-  ; not covered by the restriction in its row and column. 
-  (for/or ((i (in-set (vector-ref neighbours index))))
-    (= (board-ref i) d)))
-
-(define (solve)
-  (define nr-of-solutions 0)
-  (define (solve empty-fields)
-    (cond
-      ((null? empty-fields)
-       (unless (count-only) (print-board))
-       (set! nr-of-solutions (add1 nr-of-solutions)))
-      (else
-        (define-values (index digits) (find-least-empty-field empty-fields))
-        ; Backtrack when the tried digits prohibit a solution,
-        ; id est, when there is a field whose neighbours already have all 9 digits.
-        (when (and index (not (null? digits)))
-          (for ((d (in-list digits)))
-            (board-set! index d)
-            (solve (remove index empty-fields))
-            (board-set! index 0))))))
-  (define empty-fields (for/list ((index in-indices) #:unless (digit? (board-ref index))) index))
-  (solve empty-fields)
-  nr-of-solutions)
-
 (define (find-least-empty-field empty-fields)
   (find-least-field
     (for/list ((field (in-list empty-fields)))
@@ -228,41 +235,29 @@ to be selected must be looked for. Much more time is gained than lost.
                     (not (= (board-ref nb) d))))
           d)))))
 
-(define (find-least-field lst)
+(define (find-least-field indices/digits)
   (cond
-    ((null? lst) (values #f #f))
+    ((null? indices/digits) (values #f #f))
     (else
-      (define f (caar lst))
-      (define ds (cdar lst))
-      (let loop ((f f) (ds ds) (lst (cdr lst)) (n (length ds)))
+      (define f (caar indices/digits))
+      (define ds (cdar indices/digits))
+      (let loop ((f f) (ds ds) (index/digits (cdr indices/digits)) (n (length ds)))
         (cond
-          ((null? lst) (values f ds))
+          ((null? index/digits) (values f ds))
           (else
-            (define new-f (caar lst))
-            (define new-ds (cdar lst))
+            (define new-f (caar index/digits))
+            (define new-ds (cdar index/digits))
             (define new-n (length new-ds))
             (cond
               ((zero? new-n) (values #f #f))
-              ((< new-n n) (loop new-f new-ds (cdr lst) new-n))
-              (else (loop f ds (cdr lst) n)))))))))
+              ((< new-n n) (loop new-f new-ds (cdr index/digits) new-n))
+              (else (loop f ds (cdr index/digits) n)))))))))
 
-(define (sudoku lst)
-  (printf "Starting sudoku:\n~
-           Initial board:\n\n")
-  (fill-board lst)
-  (print-board)
-  (unless (count-only) (displayln "Solutions:\n"))
-  (define-values (n cpu real gc) (time-apply solve '()))
-  (printf "Finished:\n~
-           Nr of solutions: ~s~n~
-           CPU time: about ~a seconds~n~n"
-    (car n) (~r cpu)))
-
-(define (~r x)
+(define (~r x) ; Format x/1000 in positional notation with three decimals followig the decimal period.
   (define-values (i f) (quotient/remainder x 1000))
-  (format "~s.~a" i (add-zeros f)))
+  (format "~s.~a" i (align f)))
 
-(define (add-zeros f)
+(define (align f) ; Add zeros to the left of the fraction such as to form 3 digits.
   (define str (format "~s" f))
   (define len (string-length str))
   (string-append (make-string (- 3 len) #\0) str))
