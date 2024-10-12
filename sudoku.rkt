@@ -1,6 +1,6 @@
 #|====================================================================================================
 
-A brute force recursive sudoku solver
+A brute force sudoku solver
 
 ======================================================================================================
 
@@ -14,8 +14,8 @@ duplicates. Rows and columns are numbered from 1 up to and including 9.
 
        1 2 3   4 5 6   7 8 9
      -------------------------   Each dot stand for a field, either empty or containing a non zero
-   1 | • • • | • • • | • • • |   digit such that rows, columns and sub boards have no duplicates.
-   2 | • • • | • • • | • • • |   
+   1 | • • • | • • • | • • • |   decimal digit such that rows, columns and sub boards have no
+   2 | • • • | • • • | • • • |   duplicates. See file examples.rkt for examples.
    3 | • • • | • • • | • • • |
      -------------------------
    4 | • • • | • • • | • • • |
@@ -74,9 +74,7 @@ Not all incomplete boards have a solution, For example:
    • • • • • • • • • 
    • • • • • • • • • 
 
-   Finished:
    Nr of solutions: 0
-   CPU time: about 0.015 seconds
 
 ======================================================================================================
 
@@ -101,6 +99,7 @@ puzzle has one solution only.
 Parameter : (count-only) --> boolean?
             (count-only ‹yes/no›) --> void?
 ‹yes/no› : any/c
+Initial value : #f
 
 If this parameter is true, solutions are not printed.
 Argument ‹yes/no› is coerced to a boolean: (and ‹yes/no› #t).
@@ -113,12 +112,12 @@ The board is kept in a mutable vector. A row and column index is converted to a 
 
 Empty fields are marked with 0 and printed as ‘•’. Variable neighbours contains a vector of 81 sets
 of indices, the set at index i containing the indices of fields that must not contain the same digit
-as field i. Procedure solver does a two level loop, the outer level recursively along empty fields and
-the inner level along all digits still allowed in the currently selected field. Each field has 20
-neighbours, 8 in its row, 8 in its column and 4 additional ones in its subboard. The outer recursion
-selects a field with the least number of digits still allowed. This speeds up by reducing the number
-of cycles in the inner loop, although some time is lost because at every level of recursion the field
-to be selected must be looked for. Much more time is gained than lost.
+as field i. Each field has 20 neighbours, 8 in its row, 8 in its column and 4 additional ones in its
+subboard. Procedure solver does a two level loop, the outer loop along empty fields and the inner loop
+along all digits still allowed in the currently selected empty field. The outer loop selects a field
+with the least number of digits still not in a neighbour. This speeds up by reducing the number of
+cycles in the inner loop, although some time is lost because during every cycle of the outer loop the
+field to be selected must be looked for. Much more time is saved than lost.
 
 ====================================================================================================|#
 
@@ -147,11 +146,7 @@ to be selected must be looked for. Much more time is gained than lost.
   (fill-board lst)
   (print-board)
   (unless (count-only) (displayln "Solutions:\n"))
-  (define-values (|(n)| cpu real gc) (time-apply solve '()))
-  (printf "Finished:\n~
-           Nr of solutions: ~s~n~
-           CPU time: about ~a seconds~n~n"
-    (car |(n)|) (~r cpu)))
+  (printf "Nr of solutions: ~s~n~n" (solve)))
 
 (define (solve)
   (define nr-of-solutions 0)
@@ -169,8 +164,7 @@ to be selected must be looked for. Much more time is gained than lost.
             (board-set! index d)
             (solve (remove index empty-fields))
             (board-set! index 0))))))
-  (define empty-fields (for/list ((index in-indices) #:unless (digit? (board-ref index))) index))
-  (solve empty-fields)
+  (solve (for/list ((index in-indices) #:unless (digit? (board-ref index))) index))
   nr-of-solutions)
 
 (define count-only (make-parameter #f (λ (x) (and x #t)) 'count-only))
@@ -238,6 +232,7 @@ to be selected must be looked for. Much more time is gained than lost.
 (define (find-least-field indices/digits)
   (cond
     ((null? indices/digits) (values #f #f))
+    ((for/or ((ds (in-list (map cdr indices/digits)))) (null? ds)) (values #f #f)) 
     (else
       (define f (caar indices/digits))
       (define ds (cdar indices/digits))
@@ -249,7 +244,7 @@ to be selected must be looked for. Much more time is gained than lost.
             (define new-ds (cdar index/digits))
             (define new-n (length new-ds))
             (cond
-              ((zero? new-n) (values #f #f))
+              ((= new-n 1) (values new-f new-ds))
               ((< new-n n) (loop new-f new-ds (cdr index/digits) new-n))
               (else (loop f ds (cdr index/digits) n)))))))))
 

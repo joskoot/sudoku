@@ -5,9 +5,7 @@
 ; Examples
 ; ‘•’ is used for empty fields. It is not a period.
 
-; The following has no solution:
-
-(parameterize ((count-only #t))
+(parameterize ((count-only #t)) ; This board has no solution:
   (sudoku
     '(• 2 3 • • • • • •
       • 7 9 • • • • • •
@@ -19,9 +17,7 @@
       • • • • • • • • •
       • • • • • • • • •)))
 
-; Trivial, board already complete.
-
-(sudoku
+(sudoku ; Trivial, board already complete.
   '(1 2 3   4 5 6   7 8 9
     4 5 6   7 8 9   1 2 3
     7 8 9   1 2 3   4 5 6
@@ -34,9 +30,7 @@
     6 4 5   9 7 8   3 1 2
     9 7 8   3 1 2   6 4 5))
 
-; More than one solution:
-
-(sudoku
+(sudoku ; 8 solutions:
   '(1 2 3   4 5 6   7 8 9
     4 5 6   7 8 9   1 2 3
     7 8 9   1 2 3   4 5 6
@@ -49,7 +43,7 @@
     • • •   • • •   • • •
     • • •   • • •   • • •))
    
-; More than one solution:
+; 4 solutions:
 
 (sudoku
   '(1 2 3   4 5 6   7 8 9
@@ -64,9 +58,20 @@
     • • •   • • •   3 • •
     • • •   • • •   • • •))
 
-; One solution:
+(sudoku ; 2 solutions:
+  '(1 2 3   4 5 6   7 8 9
+    4 5 6   7 8 9   1 2 3
+    7 8 9   1 2 3   4 5 6
 
-(sudoku
+    2 3 1   5 6 4   8 9 7
+    5 6 4   8 9 7   2 3 1
+    8 9 7   2 3 1   5 6 4
+
+    3 1 2   6 4 5   9 7 8
+    • • •   • • •   3 1 •
+    • • •   • • •   6 • •))
+
+(sudoku ; 1 solution:
   '(• • •   5 2 4   • • 6
     9 3 •   • • •   • 7 •
     • • •   • • •   • • •
@@ -79,9 +84,7 @@
     • 9 •   • • •   • 2 •
     • • 4   • 8 •   • 3 •))
 
-; One solution:
-
-(sudoku
+(sudoku ; 1 solution:
   '(5 3 •   • 7 •   • • •
     6 • •   1 9 5   • • •
     • 9 8   • • •   • 6 •
@@ -94,9 +97,7 @@
     • • •   4 1 9   • • 5
     • • •   • 8 •   • 7 9))
 
-; More than one solution:
-
-(sudoku
+(sudoku ; 3 solutions:
   '(5 3 •   • 7 •   • • •
     6 • •   1 9 5   • • •
     • 9 8   • • •   • 6 •
@@ -109,9 +110,7 @@
     • • •   4 1 9   • • •
     • • •   • 8 •   • x x))
 
-; One solution:
-
-(sudoku
+(sudoku ; 1 solution:
   '(8 • •   • • •   • • •
     • • 3   6 • •   • • •
     • 7 •   • 9 •   2 • •
@@ -131,8 +130,11 @@
 ; It is somewhat complicated, but not difficult to parallelize the computation,
 ; but this would obscure the essentials of the algorithm in procedure solve.
 
+(printf "The following example may take some time.~n~n")
+(flush-output)
+
 (parameterize ((count-only #t))
-  (sudoku
+  (sudoku ; 3219 solutions:
     '(8 • •   • • •   • • •
       • • 3   6 • •   • • •
       • 7 •   • 9 •   x • •
@@ -150,7 +152,7 @@
 
 #;
 (parameterize ((count-only #t))
-  (sudoku
+  (sudoku ; 6670903752021072936960 solutions:
     '(• • •   • • •   • • •
       • • •   • • •   • • •
       • • •   • • •   • • •
@@ -164,3 +166,5 @@
       • • •   • • •   • • •)))
 
 ;=====================================================================================================
+
+(displayln "End of all examples.\n")
