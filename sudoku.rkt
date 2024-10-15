@@ -4,18 +4,18 @@ A brute force sudoku solver
 
 ======================================================================================================
 
-Sudoku puzzles of the following type are considered: a square board of 9 rows and 9 columns, in total
-81 fields. Some of the fields contain a non zero decimal digit. The other fields are empty. However,
-a row does not contain a duplicate digit, a column neither. There are 9 disjunct convex subboards,
-each with 9 fields in 3 adjacent rows and 3 adjacent columns. See the figure below. A subboard does
-not contain duplicate digits either. The goal of the puzzle is to fill all empty fields with non zero
-decimal digits while retaining the restriction that a row, column or subboard must not contain
-duplicates. Rows and columns are numbered from 1 up to and including 9.
+A simple program solving sudoku puzzles of the following type: a square board of 9 rows and 9 columns,
+in total 81 fields. Some of the fields contain a non zero decimal digit. The other fields are empty.
+However, a row does not contain a duplicate digit, a column neither. There are 9 disjunct convex 
+subboards, each with 9 fields in 3 adjacent rows and 3 adjacent columns. See the figure below.
+A subboard does not contain duplicate digits either. The goal of the puzzle is to fill all empty 
+fields with non zero decimal digits while retaining the restriction that a row, column or subboard
+must not contain duplicates. Rows and columns are numbered from 1 up to and including 9.
 
        1 2 3   4 5 6   7 8 9
      -------------------------   Each dot stand for a field, either empty or containing a non zero
-   1 | • • • | • • • | • • • |   decimal digit such that rows, columns and sub boards have no
-   2 | • • • | • • • | • • • |   duplicates. See file examples.rkt for examples.
+   1 | • • • | • • • | • • • |   decimal digit such that rows, columns and subboards have no
+   2 | • • • | • • • | • • • |   duplicates. See file examples.rkt.
    3 | • • • | • • • | • • • |
      -------------------------
    4 | • • • | • • • | • • • |
@@ -27,25 +27,12 @@ duplicates. Rows and columns are numbered from 1 up to and including 9.
    9 | • • • | • • • | • • • |
      -------------------------
 
-In a completed board each row, each column and each sub board contains all digits from 1 up to and
+In a completed board each row, each column and each subboard contains all digits from 1 up to and
 including 9. There are 6670903752021072936960 fully complete boards. Theoretically they can be
 generated and counted by calling procedure sudoku with all fields empty, but in practice the large
-number makes this impossible. I don't know of a fast method of computing this number.
-See https://en.wikipedia.org/wiki/Sudoku and https://en.wikipedia.org/wiki/Mathematics_of_Sudoku and
-https://people.math.sc.edu/girardi/sudoku/enumerate.pdf. Given a solution, combination of the
-following operations yield (3!)↑8 = 1679616 distinct correctly filled boards:
-
-   Permutation of rows 1, 2 and 3; factor 3!;
-   Permutation of rows 4, 5 and 6; factor 3!;
-   Permutation of rows 7, 8 and 9; factor 3!;
-   Permutation of columns 1, 2 and 3; factor 3!;
-   Permutation of columns 4, 5 and 6; factor 3!;
-   Permutation of columns 7, 8 and 9; factor 3!;
-   Permutation of the three rows of sub boards; factor 3!;
-   Permutation of the three columns of sub boards; factor 3!.
-
-We have 6670903752021072936960 / (3!)↑8 = 3971683856322560 = (2↑12)×5×7×27704267971.
-(‘↑’ indicates exponentiation).
+number makes this impossible. For a method to compute the number, see
+https://en.wikipedia.org/wiki/Sudoku, https://en.wikipedia.org/wiki/Mathematics_of_Sudoku and
+https://people.math.sc.edu/girardi/sudoku/enumerate.pdf.
 
 Not all incomplete boards have a solution, For example:
 
@@ -113,11 +100,11 @@ The board is kept in a mutable vector. A row and column index is converted to a 
 Empty fields are marked with 0 and printed as ‘•’. Variable neighbours contains a vector of 81 sets
 of indices, the set at index i containing the indices of fields that must not contain the same digit
 as field i. Each field has 20 neighbours, 8 in its row, 8 in its column and 4 additional ones in its
-subboard. Procedure solver does a two level loop, the outer loop along empty fields and the inner loop
-along all digits still allowed in the currently selected empty field. The outer loop selects a field
-with the least number of digits still not in a neighbour. This speeds up by reducing the number of
-cycles in the inner loop, although some time is lost because during every cycle of the outer loop the
-field to be selected must be looked for. Much more time is saved than lost.
+subboard. Procedure solver does a two level loop, the outer loop along empty fields and the inner
+loop along all digits still allowed in the currently selected empty field. The outer loop selects a
+field with the least number of digits still not in a neighbour. This speeds up by reducing the number
+of cycles in the inner loop, although some time is lost because during every cycle of the outer loop
+the field to be selected for the inner loop must be looked for. Much more time is saved than lost.
 
 ====================================================================================================|#
 
@@ -133,11 +120,19 @@ field to be selected must be looked for. Much more time is saved than lost.
     any/c
     and/c
     ->
-    case->))
+    case->
+    sqr))
+
+; Dimensions for 9×9 board.
+; K can be adapted for a board of N rows by N columns, N=K↑2, with subboards of K×K fields.
+
+(define K 3)
+(define N (sqr K))
+(define N↑2 (sqr N))
 
 (provide
   (contract-out
-    (sudoku (-> (and/c list? (λ (lst) (= (length lst) 81))) void?))
+    (sudoku (-> (and/c list? board?) void?))
     (count-only (case-> (-> any/c void?) (-> boolean?)))))
 
 (define (sudoku lst)
@@ -158,7 +153,7 @@ field to be selected must be looked for. Much more time is saved than lost.
       (else
         (define-values (index digits) (find-least-empty-field empty-fields))
         ; Backtrack when the tried digits prohibit a solution,
-        ; id est, when there is a field whose neighbours already have all 9 digits.
+        ; id est, when there is a field whose neighbours already have all N digits.
         (when (and index (not (null? digits)))
           (for ((d (in-list digits)))
             (board-set! index d)
@@ -168,12 +163,13 @@ field to be selected must be looked for. Much more time is saved than lost.
   nr-of-solutions)
 
 (define count-only (make-parameter #f (λ (x) (and x #t)) 'count-only))
-(define in-indices (in-range 81))
-(define in-digits (in-range 1 10))
-(define (digit? d) (and (natural? d) (<= 1 d 9)))
-(define (row/col->index row col) (+ (* 9 (sub1 row)) (sub1 col)))
+(define in-indices (in-range N↑2))
+(define in-digits (in-range 1 (add1 N)))
+(define (digit? d) (and (natural? d) (<= 1 d N)))
+(define (row/col->index row col) (+ (* N (sub1 row)) (sub1 col)))
 (define (convert-zero d) (if (digit? d) d '•))
 (define board "To be initialized by procedure fill-board")
+(define (board? obj) (and (list? obj) (= (length obj) N↑2)))
 
 (define board-ref
   (case-lambda
@@ -186,14 +182,14 @@ field to be selected must be looked for. Much more time is saved than lost.
     ((index value) (vector-set! board index value))))
 
 (define (fill-board input)
-  ; (unless (board? input) (raise-argument-error 'read-board "board?" input))
-  (set! board (make-vector 81)) ; Initially filled with zeros.
+  (unless (board? input) (raise-argument-error 'sudoku "board?" input))
+  (set! board (make-vector N↑2)) ; Initially filled with zeros.
   (for ((index in-indices) (d (in-list input)))
     (when (digit? d) ; Leave empty fields zero.
       (define ns (vector-ref neighbours index))
       (for ((n (in-set ns)))
         (when (= d (board-ref n))
-          (error 'read-board "neigbouring digit: ~s at indices ~s ~s" d index n)))
+          (error 'sudoku "same neigbouring digit ~s at indices ~s and ~s" d n index)))
       (board-set! index d))))
 
 (define (print-board)
@@ -203,19 +199,19 @@ field to be selected must be looked for. Much more time is saved than lost.
   (newline))
 
 ; Two fields are neighbours if in the same row, the same column or the same subboard. neighbours is
-; a vector of 81 elements, element i being the set of the indices of all neighbours of field i.
+; a vector of N↑2 elements, element i being the set of the indices of all neighbours of field i.
 
 (define neighbours
-  (let ((neighbour-vector (build-vector 81 (λ (index) (mutable-seteqv)))))
+  (let ((neighbour-vector (build-vector N↑2 (λ (index) (mutable-seteqv)))))
     (for* ((row in-digits) (col in-digits))
       (for ((r in-digits) #:unless (= r row))
         (set-add! (vector-ref neighbour-vector (row/col->index row col)) (row/col->index r col)))
       (for ((c in-digits) #:unless (= c col))
         (set-add! (vector-ref neighbour-vector (row/col->index row col)) (row/col->index row c)))
       (let*
-        ((r (add1 (* 3 (quotient (sub1 row) 3))))
-         (c (add1 (* 3 (quotient (sub1 col) 3)))))
-        (for* ((r (in-range r (+ r 3))) (c (in-range c (+ c 3))) #:unless (and (= r row) (= c col)))
+        ((r (add1 (* K (quotient (sub1 row) K))))
+         (c (add1 (* K (quotient (sub1 col) K)))))
+        (for* ((r (in-range r (+ r K))) (c (in-range c (+ c K))) #:unless (and (= r row) (= c col)))
           (set-add! (vector-ref neighbour-vector (row/col->index row col)) (row/col->index r c)))))
     neighbour-vector))
 
