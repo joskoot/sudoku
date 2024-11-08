@@ -5,166 +5,251 @@
 ; Examples
 ; ‘•’ is used for empty fields. It is not a period.
 
-(parameterize ((count-only #t)) ; This board has no solution:
-  (sudoku
-    '(• 2 3 • • • • • •
-      • 7 9 • • • • • •
-      • • • 9 • • 4 1 •
-      • 3 2 1 4 9 8 6 •
-      • 9 7 • • • • • •
-      • • • • • • • • •
-      • • • • • • • • •
-      • • • • • • • • •
-      • • • • • • • • •)))
-
-(sudoku ; Trivial, board already complete.
-  '(1 2 3   4 5 6   7 8 9
-    4 5 6   7 8 9   1 2 3
-    7 8 9   1 2 3   4 5 6
-
-    2 3 1   5 6 4   8 9 7
-    5 6 4   8 9 7   2 3 1
-    8 9 7   2 3 1   5 6 4
-
-    3 1 2   6 4 5   9 7 8
-    6 4 5   9 7 8   3 1 2
-    9 7 8   3 1 2   6 4 5))
-
-(sudoku ; 8 solutions:
-  '(1 2 3   4 5 6   7 8 9
-    4 5 6   7 8 9   1 2 3
-    7 8 9   1 2 3   4 5 6
-
-    2 3 1   5 6 4   8 9 7
-    5 6 4   8 9 7   2 3 1
-    8 9 7   2 3 1   5 6 4
-
-    3 1 2   6 4 5   9 7 8
-    • • •   • • •   • • •
-    • • •   • • •   • • •))
-   
-; 4 solutions:
-
-(sudoku
-  '(1 2 3   4 5 6   7 8 9
-    4 5 6   7 8 9   1 2 3
-    7 8 9   1 2 3   4 5 6
-
-    2 3 1   5 6 4   8 9 7
-    5 6 4   8 9 7   2 3 1
-    8 9 7   2 3 1   5 6 4
-
-    3 1 2   6 4 5   9 7 8
-    • • •   • • •   3 • •
-    • • •   • • •   • • •))
-
-(sudoku ; 2 solutions:
-  '(1 2 3   4 5 6   7 8 9
-    4 5 6   7 8 9   1 2 3
-    7 8 9   1 2 3   4 5 6
-
-    2 3 1   5 6 4   8 9 7
-    5 6 4   8 9 7   2 3 1
-    8 9 7   2 3 1   5 6 4
-
-    3 1 2   6 4 5   9 7 8
-    • • •   • • •   3 1 •
-    • • •   • • •   6 • •))
-
-(sudoku ; 1 solution:
-  '(• • •   5 2 4   • • 6
-    9 3 •   • • •   • 7 •
-    • • •   • • •   • • •
-
-    • • •   • • 3   • • •
-    2 8 •   • • •   • • •
-    • • 1   7 • •   4 • •
-
-    • • •   6 • •   1 • 7
-    • 9 •   • • •   • 2 •
-    • • 4   • 8 •   • 3 •))
-
-(sudoku ; 1 solution:
-  '(5 3 •   • 7 •   • • •
-    6 • •   1 9 5   • • •
-    • 9 8   • • •   • 6 •
-
-    8 • •   • 6 •   • • 3
-    4 • •   8 • 3   • • 1
-    7 • •   • 2 •   • • 6
-
-    • 6 •   • • •   2 8 •
-    • • •   4 1 9   • • 5
-    • • •   • 8 •   • 7 9))
-
-(sudoku ; 3 solutions:
-  '(5 3 •   • 7 •   • • •
-    6 • •   1 9 5   • • •
-    • 9 8   • • •   • 6 •
-
-    8 • •   • 6 •   • • 3
-    4 • •   8 • 3   • • 1
-    7 • •   • 2 •   • • 6
-
-    • 6 •   • • •   2 8 •
-    • • •   4 1 9   • • •
-    • • •   • 8 •   • x x))
-
-(sudoku ; 1 solution:
-  '(8 • •   • • •   • • •
-    • • 3   6 • •   • • •
-    • 7 •   • 9 •   2 • •
-
-    • 5 •   • • 7   • • •
-    • • •   • 4 5   7 • •
-    • • •   1 • •   • 3 •
-
-    • • 1   • • •   • 6 8
-    • • 8   5 • •   • 1 •
-    • 9 •   • • •   4 • •))
-
-; For the previous example the unique solution is computed rapidly,
-; but it takes some seconds to check that there are no more solutions.
-; Omitting digit 2 in column 7 of row 3 yields 3219 solutions.
-; On my PC this takes somewhat more than a minute.
-; It is somewhat complicated, but not difficult to parallelize the computation,
-; but this would obscure the essentials of the algorithm in procedure solve.
-
-(printf "The following example may take some time.~n~n")
+(displayln "\nThe examples may take about a minute.\n")
 (flush-output)
 
-(parameterize ((count-only #t))
-  (sudoku ; 3219 solutions:
-    '(8 • •   • • •   • • •
-      • • 3   6 • •   • • •
-      • 7 •   • 9 •   x • •
+(define n 0)
+(define (Sudoku board) (set! n (add1 n)) (sudoku board))
 
-      • 5 •   • • 7   • • •
-      • • •   • 4 5   7 • •
-      • • •   1 • •   • 3 •
+(define-values (ignore cpu real gc)
+  (time-apply
+    (λ ()
 
-      • • 1   • • •   • 6 8
-      • • 8   5 • •   • 1 •
-      • 9 •   • • •   4 • •)))
+      ; This board has no solution:
 
-; The following example would count all complete sudoku boards.
-; Do not uncomment it, for it would last too long, although it would run in constant space.
+      (define board1
+        '(• 2 3 • • • • • •
+          • 7 9 • • • • • •
+          • • • • • • • • •
+          • 3 2 • • • • • •
+          • 9 7 • • • • • •
+          • • • • • • • • •
+          • • • • • • • • •
+          • • • • • • • • •
+          • • • • • • • • •))
 
-#;
-(parameterize ((count-only #t))
-  (sudoku ; 6670903752021072936960 solutions:
-    '(• • •   • • •   • • •
-      • • •   • • •   • • •
-      • • •   • • •   • • •
+      (sudoku board1)
 
-      • • •   • • •   • • •
-      • • •   • • •   • • •
-      • • •   • • •   • • •
+      ; Leaving out one of the digits produces a board with solutions:
 
-      • • •   • • •   • • •
-      • • •   • • •   • • •
-      • • •   • • •   • • •)))
+      (parameterize ((one-solution-only #t))
+        (define board (apply vector board1))
+        (for ((d (in-vector board)) (i (in-range 81)) #:when (number? (vector-ref board i)))
+          (define old-d (vector-ref board i))
+          (vector-set! board i 0)
+          (sudoku (vector->list board))
+          (vector-set! board i old-d)))
+
+      (parameterize ((one-solution-only #t))
+        (Sudoku
+          '(• • • • • • • • •
+            • • • • • • • • •
+            • • • • • • • • •
+            • • • • • • • • •
+            • • • • • • • • •
+            • • • • • • • • •
+            • • • • • • • • •
+            • • • • • • • • •
+            • • • • • • • • •)))
+      
+      (Sudoku ; Trivial, board already complete.
+        '(1 2 3   4 5 6   7 8 9
+          4 5 6   7 8 9   1 2 3
+          7 8 9   1 2 3   4 5 6
+
+          2 3 1   5 6 4   8 9 7
+          5 6 4   8 9 7   2 3 1
+          8 9 7   2 3 1   5 6 4
+
+          3 1 2   6 4 5   9 7 8
+          6 4 5   9 7 8   3 1 2
+          9 7 8   3 1 2   6 4 5))
+
+      (Sudoku ; 8 solutions:
+        '(1 2 3   4 5 6   7 8 9
+          4 5 6   7 8 9   1 2 3
+          7 8 9   1 2 3   4 5 6
+
+          2 3 1   5 6 4   8 9 7
+          5 6 4   8 9 7   2 3 1
+          8 9 7   2 3 1   5 6 4
+
+          3 1 2   6 4 5   9 7 8
+          • • •   • • •   • • •
+          • • •   • • •   • • •))
+
+      (Sudoku ; 4 solutions:
+        '(1 2 3   4 5 6   7 8 9
+          4 5 6   7 8 9   1 2 3
+          7 8 9   1 2 3   4 5 6
+
+          2 3 1   5 6 4   8 9 7
+          5 6 4   8 9 7   2 3 1
+          8 9 7   2 3 1   5 6 4
+
+          3 1 2   6 4 5   9 7 8
+          • • •   • • •   3 • •
+          • • •   • • •   • • •))
+
+      (Sudoku ; 2 solutions:
+        '(1 2 3   4 5 6   7 8 9
+          4 5 6   7 8 9   1 2 3
+          7 8 9   1 2 3   4 5 6
+
+          2 3 1   5 6 4   8 9 7
+          5 6 4   8 9 7   2 3 1
+          8 9 7   2 3 1   5 6 4
+
+          3 1 2   6 4 5   9 7 8
+          • • •   • • •   3 1 •
+          • • •   • • •   6 • •))
+
+      (Sudoku ; 1 solution:
+        '(• • •   5 2 4   • • 6
+          9 3 •   • • •   • 7 •
+          • • •   • • •   • • •
+
+          • • •   • • 3   • • •
+          2 8 •   • • •   • • •
+          • • 1   7 • •   4 • •
+
+          • • •   6 • •   1 • 7
+          • 9 •   • • •   • 2 •
+          • • 4   • 8 •   • 3 •))
+
+      (Sudoku ; 1 solution:
+        '(• 3 •   • • •   • • • 
+          • • •   1 • 5   • • • 
+          • 9 8   • • •   • 6 •
+     
+          8 • •   • 6 •   • • 3 
+          4 • •   • • 3   • • 1 
+          7 • •   • 2 •   • • •
+     
+          • 6 •   • • •   2 8 • 
+          • • •   4 • 9   • • 5 
+          • • •   • • •   • 7 •))
+
+      (Sudoku ; 1 solution:
+        '(• 3 •   • • •   • • • 
+          • • •   1 • 5   • • • 
+          • 9 8   • • •   • 6 • 
+
+          8 • •   • 6 •   • • 3 
+          4 • •   • • 3   • • 1 
+          7 • •   • 2 •   • • • 
+
+          • 6 •   • • •   2 8 • 
+          • • •   4 • 9   • • 5 
+          • • •   • • •   • 7 •))
+
+      (parameterize ((count-only #t))
+        (Sudoku ; 652 solutions:
+          '(• 3 •   • • •   • • • 
+            • • •   1 • 5   • • • 
+            • 9 8   • • •   • 6 • 
+
+            8 • •   • X •   • • 3 
+            4 • •   • • 3   • • 1 
+            7 • •   • 2 •   • • • 
+
+            • 6 •   • • •   2 8 • 
+            • • •   4 • 9   • • 5 
+            • • •   • • •   • 7 •)))
+
+      (parameterize ((count-only #t)) ; 6280 solutions:
+        (Sudoku
+          '(1 2 3 4 5 6 7 8 9
+            4 5 6 7 8 9 1 2 3
+            7 8 9 1 2 3 4 5 6
+            2 3 1 • • • • • •
+            5 6 4 • • • • • •
+            8 9 7 • • • • • •
+            3 1 2 • • • • • •
+            6 4 5 • • • • • •
+            9 7 8 • • • • • •)))
+
+      (parameterize ((count-only 'yes))
+        (sudoku
+          '(• 2 3 • 5 6 • 8 9 
+            4 • 6 7 • 9 1 • 3 
+            7 8 • 1 2 • 4 5 • 
+            • 3 1 • • • • • • 
+            5 • 4 • • • • • • 
+            8 9 • • • • • • • 
+            • 1 2 • • • • • • 
+            6 • 5 • • • • • • 
+            9 7 • • • • • • •)))
+
+      (parameterize ((count-only 'yes))
+        (sudoku
+          '(• 2 3 • 5 6 • 8 9 
+            4 • 6 7 • 9 1 • 3 
+            7 8 • 1 2 • 4 5 • 
+            • 3 1 • • • • • • 
+            5 • 4 • • • • • • 
+            8 9 • • • • • • • 
+            • 1 2 • • • • • • 
+            6 • 5 • • • • • • 
+            • • • • • • • • •)))
+
+      (define board2
+        '(8 • •   • • •   • • •
+          • • 3   6 • •   • • •
+          • 7 •   • 9 •   2 • •
+
+          • 5 •   • • 7   • • •
+          • • •   • 4 5   7 • •
+          • • •   1 • •   • 3 •
+
+          • • 1   • • •   • 6 8
+          • • 8   5 • •   • 1 •
+          • 9 •   • • •   4 • •))
+
+      (Sudoku  board2) ; 1 solution:
+
+      ; Omitting a digit from the previous example yields more than one solution:
+
+      (parameterize ((count-only #t))
+        (define board (apply vector board2))
+        (for ((d (in-vector board)) (i (in-range 81)) #:when (number? (vector-ref board i)))
+          (define old-d (vector-ref board i))
+          (vector-set! board i 0)
+          (Sudoku (vector->list board))
+          (vector-set! board i old-d)))
+
+      (Sudoku ; No solution:
+        '(1 • • • • • • • •  
+          • • • 1 • • • • •  
+          • • • • • • • • 2  
+          • • • • • • 1 • •  
+          • • • • • • • • •  
+          • • • • • • • • •   
+          • • • • • • • • •  
+          • • • • • • • 1 •  
+          • • • • • • • • •))
+
+      ; The following example would count all complete Sudoku boards.
+      ; Do not uncomment it, for it would last too long, although it would run in constant space.
+      #;
+      (parameterize ((count-only #t))
+        (Sudoku ; 6670903752021072936960 solutions:
+          '(• • •   • • •   • • •
+            • • •   • • •   • • •
+            • • •   • • •   • • •
+
+            • • •   • • •   • • •
+            • • •   • • •   • • •
+            • • •   • • •   • • •
+
+            • • •   • • •   • • •
+            • • •   • • •   • • •
+            • • •   • • •   • • •))))
+    '()))
+
+(displayln "\nEnd of all examples")
+(printf "Nr of boards ~s, cpu ~s ms, real ~s ms~n" n cpu real)
+(printf "Mean cpu time per board ~s ms~n~n" (round (/ cpu n)))
 
 ;=====================================================================================================
 
-(displayln "End of all examples.\n")
