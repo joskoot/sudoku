@@ -40,21 +40,21 @@ Not all valid boards have a solution. See file examples.rkt.
 
 ======================================================================================================
 
-Procedure : (sudoku ‹lst›) --> void?
-‹lst› : list of 81 elements
+Procedure : (sudoku ‹lst›) --> natural?
+‹lst› : board?
 
-Each subsequent contiguous sublist of 9 elements of ‹lst› is considered to be a row. Corresponding
-elements of rows form columns. Argument ‹lst› is checked to satisfy the restrictions. A field
-containing something else than an exact integer number n with 1≤n≤9, is considered to be empty.
-The ‹lst› does not necesseraly represent a well composed puzzle with one solution only. If parameter
-one-solution-only is #f, all solutions are computed. The solutions are counted and if parameter
-count-only is #f they are printed too. If parameter one-solution-only is true, only one solution is
-looked for. If parameter count-only is true or the current output port does not gather output in
-memory, the procedure runs in constant space. With parameter count-only set to #f and the current
-output port connected to a file, memory consumption remains bound, but the file may become very long
-or even exceed the space available in the device. With the parameter set to #f and output gathered in
-memory the number of solutions may be too large to fit in memory. However, by definition a well
-composed puzzle has one solution only.
+A board is a list of 81 elements. Each subsequent contiguous sublist of 9 elements of ‹lst› is
+considered to be a row. Corresponding elements of rows form columns. Argument ‹lst› is checked to
+satisfy the restrictions. A field containing something else than an exact integer number n with 1≤n≤9,
+is considered to be empty. The ‹lst› does not necesseraly represent a well composed puzzle with one
+solution only. If parameter max-nr-of-solutions is #f, all solutions are computed. The solutions are
+counted and if parameter count-only is #f they are printed too. Parameter max-nr-of-solutions limits
+the number of solutions to be looked for. If parameter count-only is true or the current output port does
+not gather output in memory, the procedure runs in constant space. With parameter count-only set to #f
+and the current output port connected to a file, memory consumption remains bound, but the file may
+become very long or even exceed the space available in the device. With the parameter set to #f and
+output gathered in memory the number of solutions may be too large to fit in memory. However,
+by definition a well composed puzzle has one solution only.
 
 ======================================================================================================
 
@@ -64,22 +64,22 @@ Parameter : (count-only) --> boolean?
 
 If this parameter is true, solutions are not printed.
 Argument ‹yes/no› is coerced to a boolean: (and ‹yes/no› #t).
-This parameter has no effect when parameter one-solution-only is true.
+This parameter has no effect when parameter max-nr-of-solutions is true.
 
 ======================================================================================================
 
-Parameter : (one-solution-only) --> boolean?
-            (one-solution-only ‹yes/no›) --> void?
-‹yes/no› : any/c, initial value : #f
+Parameter : (max-nr-of-solutions) --> (or/c #f exact-positive-integer?)
+            (max-nr-of-solutions ‹n›) --> void?
+‹n› : (or/c #f exact-positive-integer?) = #f
 
 If this parameter is true, only one solution is looked for.
-Argument ‹yes/no› is coerced to a boolean: (and ‹yes/no› #t).
+Argument ‹n› is coerced to a boolean: (and ‹yes/no› #t).
 
 ======================================================================================================
 
 The board is kept in a mutable vector. A row and column index r and c are converted to a vector index:
 
-   (+ (* 9 (sub1 r)) (sub1 c)) ; 9(r-1)+(c-1)
+   index = 9×(r-1) + (c-1)
 
 Empty fields are replaced by 0 and printed as ‘•’. Variable neighbours contains a vector of 81 lists
 of indices, the list at index i containing the indices of fields that must not contain the same digit
@@ -104,6 +104,7 @@ the field to be selected for the inner loop must be looked for. Much more time i
     contract-out
     any/c
     and/c
+    or/c
     ->
     case->
     sqr)
@@ -111,12 +112,14 @@ the field to be selected for the inner loop must be looked for. Much more time i
 
 (provide
   (contract-out
-    (sudoku (-> board? void?))
+    (sudoku (-> board? natural?))
     (count-only Bool-parameter)
-    (one-solution-only Bool-parameter)
+    (max-nr-of-solutions Max-parameter)
     #;(board? (-> any/c boolean?))))
 
-(define Bool-parameter (and/c parameter? (case-> (-> any/c void?) (-> boolean?))))
+(define-syntax-rule (Parameter in out) (and/c parameter? (case-> (-> in void?) (-> out))))
+(define Bool-parameter (Parameter any/c boolean?))
+(define Max-parameter (Parameter (or/c #f exact-positive-integer?) (or/c #f exact-positive-integer?)))
 
 ; Dimensions for 9×9 board.
 ; K can be adapted for a board of N rows by N columns, N=K↑2, with a total of N↑2 fields
@@ -133,18 +136,49 @@ the field to be selected for the inner loop must be looked for. Much more time i
   (cond
     ((count-only) (displayln "Counting solutions only"))
     (else
-      (displayln
-        (if (one-solution-only)
-          "Looking for one solution only (ignoring possible more solutions)"
-          "Looking for all solutions"))))
+      (if (max-nr-of-solutions)
+        (printf
+          "Looking for ~s solution(s) only (ignoring possible more solutions)~n"
+          (max-nr-of-solutions))
+        (displayln "Looking for all solutions"))))
   (displayln "Initial board:\n")
   (print-board)
   (define-values (results cpu real gc) (time-apply solve '()))
   (displayln "Finishing sudoku")
   (cond
-    ((one-solution-only) (when (zero? nr-of-solutions) (displayln "No solution found~n")))
+    ((zero? nr-of-solutions) (displayln "No solution found"))
     (else (printf "nr of solutions: ~s ~a~n" nr-of-solutions (factors nr-of-solutions))))
-  (printf "cpu ~s ms, real ~s ms~n~n" cpu real))
+  (printf "cpu ~s ms, real ~s ms~n~n" cpu real)
+  nr-of-solutions)
+
+(define (solve)
+  (let/cc exit
+    (set! nr-of-solutions 0)
+    (define (solve empty-fields)
+      (cond
+        ((null? empty-fields)
+         (unless (count-only) (print-board #t))
+         (set! nr-of-solutions (add1 nr-of-solutions))
+         (when (and (max-nr-of-solutions) (>= nr-of-solutions (max-nr-of-solutions))) (exit)))
+        (else
+          (define-values (field digits) (find-least-empty-field/digits empty-fields))
+          (when field
+            (for ((d (in-list digits)))
+              (board-set! field d)
+              (solve (remove field empty-fields))
+              (board-set! field 0))))))
+    (solve (for/list ((index in-indices) #:unless (digit? (board-ref index))) index))))
+
+(define (coerce-to-boolean x) (and x #t))
+(define count-only (make-parameter #f coerce-to-boolean 'parameter:count-only))
+(define max-nr-of-solutions (make-parameter #f values 'parameter:max-nr-of-solutions))
+(define in-indices (in-range N↑2))
+(define in-digits (in-range 1 (add1 N)))
+(define (digit? d) (and (natural? d) (<= 1 d N)))
+(define (row/col->index row col) (+ (* N (sub1 row)) (sub1 col)))
+(define (convert-zero d) (if (digit? d) d '•))
+(define board "To be initialized by procedure fill-board")
+(define (board? obj) (and (list? obj) (= (length obj) N↑2)))
 
 (define (factors n)
   (cond
@@ -168,35 +202,6 @@ the field to be selected for the inner loop must be looked for. Much more time i
                   (else (printf "~s↑~s" base exponent)))
                 (loop (cdr factors) #f))))
           (get-output-string str-port))))))
-
-(define (solve)
-  (let/cc exit
-    (set! nr-of-solutions 0)
-    (define (solve empty-fields)
-      (cond
-        ((null? empty-fields)
-         (unless (count-only) (print-board #t))
-         (set! nr-of-solutions (add1 nr-of-solutions))
-         (when (one-solution-only) (exit)))
-        (else
-          (define-values (field digits) (find-least-empty-field/digits empty-fields))
-          (when field
-            (for ((d (in-list digits)))
-              (board-set! field d)
-              (solve (remove field empty-fields))
-              (board-set! field 0))))))
-    (solve (for/list ((index in-indices) #:unless (digit? (board-ref index))) index))))
-
-(define (coerce-to-boolean x) (and x #t))
-(define count-only (make-parameter #f coerce-to-boolean 'parameter:count-only))
-(define one-solution-only (make-parameter #f coerce-to-boolean 'parameter:one-solution-only))
-(define in-indices (in-range N↑2))
-(define in-digits (in-range 1 (add1 N)))
-(define (digit? d) (and (natural? d) (<= 1 d N)))
-(define (row/col->index row col) (+ (* N (sub1 row)) (sub1 col)))
-(define (convert-zero d) (if (digit? d) d '•))
-(define board "To be initialized by procedure fill-board")
-(define (board? obj) (and (list? obj) (= (length obj) N↑2)))
 
 #;
 (define (index->row/col index)
