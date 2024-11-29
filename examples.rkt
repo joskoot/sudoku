@@ -1,5 +1,7 @@
 #lang racket/base
 
+;=====================================================================================================
+
 (require "sudoku.rkt" (only-in racket ~r))
 
 ; Examples
@@ -359,7 +361,10 @@
 (displayln "End of all examples")
 (printf "Nr of sudoku calls: ~s, cpu: ~s ms, real: ~s ms~n" calls cpu real)
 (printf "Total nr of computed solutions: ~s~n" sols)
-(printf "Mean cpu time per solution: about ~a ms~n~n" (~r #:precision '(= 3) (/ cpu sols)))
+(printf "Mean cpu time per solution: about ~a ms~n" (~r #:precision '(= 3) (/ cpu sols)))
+(printf "Mean real time per solution: about ~a ms~n~n" (~r #:precision '(= 3) (/ real sols)))
 
 ;=====================================================================================================
+
+
 
