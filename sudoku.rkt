@@ -29,13 +29,13 @@ duplicates. Rows and columns are numbered from 1 up to and including 9.
 
 In a completed board each row, each column and each subboard contains all digits from 1 up to and
 including 9. There are 6670903752021072936960 fully complete boards. Theoretically they can be
-generated and counted by calling procedure sudoku with all fields empty, but in practice the large
-number makes this impossible. For a feasible method to compute the number, see
-https://en.wikipedia.org/wiki/sudoku, https://en.wikipedia.org/wiki/Mathematics_of_Sudoku and
-https://people.math.sc.edu/girardi/sudoku/enumerate.pdf.
+generated and counted by calling procedure Sudoku with all fields empty, but in practice the large
+number makes this impossible. For a feasible method to compute this number, see
+https://en.wikipedia.org/wiki/Sudoku, https://en.wikipedia.org/wiki/Mathematics_of_Sudoku and
+https://people.math.sc.edu/girardi/Sudoku/enumerate.pdf.
 
-A puzzle is well composed if it has one solution only and is minimally composed if it is well
-composed and erasing one of the non empty fields produces a puzzle with more than one solution.
+A Sudoku puzzle is well composed if it has one solution only and is minimally composed if it is well
+composed and erasing one of the non empty fields yields a puzzle with more than one solution.
 Not all valid boards have a solution. See file examples.rkt.
 
 ======================================================================================================
@@ -113,7 +113,7 @@ the field to be selected for the inner loop must be looked for. Much more time i
 
 (provide
   (contract-out
-    (sudoku (-> board? natural?))
+    (Sudoku (-> board? natural?))
     (count-only Bool-parameter)
     (max-nr-of-solutions Max-parameter)
     #;(board? (-> any/c boolean?))))
@@ -129,11 +129,11 @@ the field to be selected for the inner loop must be looked for. Much more time i
 (define K 3)
 (define N (sqr K))
 (define N↑2 (sqr N))
-(define nr-of-solutions 0)
+(define solutions-counter 0)
 
-(define (sudoku board)
+(define (Sudoku board)
   (fill-board board)
-  (displayln "\nStarting sudoku")
+  (displayln "\nStarting Sudoku")
   (cond
     ((count-only) (displayln "Counting solutions only"))
     (else
@@ -146,27 +146,29 @@ the field to be selected for the inner loop must be looked for. Much more time i
   (displayln "Initial board:\n")
   (print-board)
   (define-values (results cpu real gc) (time-apply solve '()))
-  (displayln "Finishing sudoku")
+  (displayln "Finishing Sudoku")
   (cond
-    ((zero? nr-of-solutions) (displayln "No solution found"))
-    (else (printf "nr of solutions: ~s ~a~n" nr-of-solutions (factors nr-of-solutions))))
-  (printf "cpu ~s ms, real ~s ms~n" cpu real)
-  (when (>  nr-of-solutions 1)
+    ((zero? solutions-counter) (displayln "No solution found"))
+    (else (printf "Nr of solutions: ~s ~a~n" solutions-counter (factors solutions-counter))))
+  (printf "Times: cpu ~s ms, real ~s ms, gc ~s ms~n" cpu real gc)
+  (when (>  solutions-counter 1)
     (printf "Mean cpu time per solution: about ~a ms~n"
-      (~r #:precision '(= 3) (/ cpu nr-of-solutions))))
+      (~r #:precision '(= 3) (/ cpu solutions-counter))))
   (newline)
-  nr-of-solutions)
+  solutions-counter)
 
 (define (solve)
   (let/cc exit
-    (set! nr-of-solutions 0)
+    (set! solutions-counter 0)
     (define (solve empty-fields)
       (cond
         ((null? empty-fields)
-         (unless (count-only) (print-board #t))
-         (set! nr-of-solutions (add1 nr-of-solutions))
+         (unless (count-only)
+           (when (zero? solutions-counter) (displayln "Solution(s)\n"))
+           (print-board))
+         (set! solutions-counter (add1 solutions-counter))
          (define max (max-nr-of-solutions))
-         (when (and max (>= nr-of-solutions max)) (exit)))
+         (when (and max (>= solutions-counter max)) (exit)))
         (else
           (define-values (field digits) (find-least-empty-field/digits empty-fields))
           (when field
@@ -225,18 +227,17 @@ the field to be selected for the inner loop must be looked for. Much more time i
     ((index value) (vector-set! board index value))))
 
 (define (fill-board input)
-  (unless (board? input) (raise-argument-error 'sudoku "board?" input))
+  (unless (board? input) (raise-argument-error 'Sudoku "board?" input))
   (set! board (make-vector N↑2)) ; Initially filled with zeros.
   (for ((index in-indices) (d (in-list input)))
     (when (digit? d) ; Leave empty fields zero.
       (define ns (vector-ref neighbours index))
       (for ((n (in-list ns)))
         (when (= d (board-ref n))
-          (error 'sudoku "same neigbouring digit ~s at indices ~s and ~s" d n index)))
+          (error 'Sudoku "invalid board: same neigbouring digit ~s at indices ~s and ~s" d n index)))
       (board-set! index d))))
 
-(define (print-board (solution? #f))
-  (when (and solution? (zero? nr-of-solutions)) (displayln "Solution(s)\n"))
+(define (print-board)
   (for ((row in-digits))
     (for ((col in-digits))  (printf "~s " (convert-zero (board-ref row col))))
     (newline))
@@ -249,7 +250,7 @@ the field to be selected for the inner loop must be looked for. Much more time i
 ;;     (board-fmt board))
 
 ; Two fields are neighbours if in the same row, the same column or the same subboard. neighbours is
-; a vector of N↑2 elements, element i being a list of the indices of all neighbours of field i.
+; a vector of N↑2 elements, element i being a list of the indices of all neighbours of element i.
 
 (define neighbours
   (let ((neighbour-vector (build-vector N↑2 (λ (index) (mutable-seteq)))))
