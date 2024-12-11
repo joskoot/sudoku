@@ -36,7 +36,9 @@ https://people.math.sc.edu/girardi/Sudoku/enumerate.pdf.
 
 A Sudoku puzzle is well composed if it has one solution only and is minimally composed if it is well
 composed and erasing one of the non empty fields yields a puzzle with more than one solution.
-Not all valid boards have a solution. See file examples.rkt.
+A minimally composed Sudoku puzzle has at least 17 non empty fields. Not all valid boards have a
+solution. See file examples.rkt. See files examples.rkt for a valid board without solution and with
+5 non empty fields only.
 
 ======================================================================================================
 
@@ -130,26 +132,32 @@ the field to be selected for the inner loop must be looked for. Much more time i
 (define N (sqr K))
 (define N↑2 (sqr N))
 (define solutions-counter 0)
+(define nr-of-guesses 0)
 
 (define (Sudoku board)
   (fill-board board)
   (displayln "\nStarting Sudoku")
-  (cond
-    ((count-only) (displayln "Counting solutions only"))
-    (else
-      (define max (max-nr-of-solutions))
-      (if max
-        (printf
-          "Looking for ~s solution(s) only (ignoring possible more solutions)~n"
-          max)
-        (displayln "Looking for all solutions"))))
+  (when (count-only) (displayln "Counting solutions only"))
+  (define max (max-nr-of-solutions))
+  (if max
+    (printf
+      "Looking for ~s solution(s) only (ignoring possible more solutions)~n"
+      max)
+    (displayln "Looking for all solutions"))
   (displayln "Initial board:\n")
   (print-board)
   (define-values (results cpu real gc) (time-apply solve '()))
   (displayln "Finishing Sudoku")
   (cond
-    ((zero? solutions-counter) (displayln "No solution found"))
-    (else (printf "Nr of solutions: ~s ~a~n" solutions-counter (factors solutions-counter))))
+    ((zero? solutions-counter)
+     (displayln "No solution found")
+     (printf "Nr of guesses ~s~n" nr-of-guesses))
+    (else
+      (printf "Nr of solutions: ~s ~a~n" solutions-counter (factors solutions-counter))
+      (printf "Total nr of guesses: ~s~n"nr-of-guesses)
+      (when (> solutions-counter 1)
+        (printf "Mean nr of guesses per solution: ~a~n"
+          (~r #:precision '(= 3) (/ nr-of-guesses solutions-counter))))))
   (printf "Times: cpu ~s ms, real ~s ms, gc ~s ms~n" cpu real gc)
   (when (>  solutions-counter 1)
     (printf "Mean cpu time per solution: about ~a ms~n"
@@ -160,6 +168,7 @@ the field to be selected for the inner loop must be looked for. Much more time i
 (define (solve)
   (let/cc exit
     (set! solutions-counter 0)
+    (set! nr-of-guesses 0)
     (define (solve empty-fields)
       (cond
         ((null? empty-fields)
@@ -173,6 +182,7 @@ the field to be selected for the inner loop must be looked for. Much more time i
           (define-values (field digits) (find-least-empty-field/digits empty-fields))
           (when field
             (for ((d (in-list digits)))
+              (set! nr-of-guesses (add1 nr-of-guesses))
               (board-set! field d)
               (solve (remove field empty-fields))
               (board-set! field 0))))))

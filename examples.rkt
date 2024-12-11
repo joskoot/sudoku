@@ -4,6 +4,8 @@
 
 (require "sudoku.rkt" (only-in racket ~r))
 
+(count-only 'yes)
+
 ; Examples
 ; ‘•’ is used for empty fields. It is not a period.
 
@@ -52,6 +54,36 @@
           (vector-set! board i 0)
           (sudoku (vector->list board))
           (vector-set! board i old-d)))
+
+      (printline)
+      (displayln "Example of a board with 5 non empty fields only and without solution.")
+      (displayln "No field for digit 1 in row 3.")
+
+      (sudoku
+        '(1 • • • • • • • •  
+          • • • 1 • • • • •  
+          • • • • • • • • 2  
+          • • • • • • 1 • •  
+          • • • • • • • • •  
+          • • • • • • • • •   
+          • • • • • • • • •  
+          • • • • • • • 1 •  
+          • • • • • • • • •))
+
+      (printline)
+      (displayln "Replacing digit 2 by digit 1 yields a board with many solutions.")
+
+      (parameterize ((max-nr-of-solutions 5))
+        (sudoku
+          '(1 • • • • • • • •  
+            • • • 1 • • • • •  
+            • • • • • • • • 1  
+            • • • • • • 1 • •  
+            • • • • • • • • •  
+            • • • • • • • • •   
+            • • • • • • • • •  
+            • • • • • • • 1 •  
+            • • • • • • • • •)))
 
       (printline)
       (displayln "6670903752021072936960 solutions.")
@@ -285,6 +317,21 @@
             • • • • • • • • •)))
 
       (printline)
+      (displayln "175336 solutions.")
+
+      (parameterize ((count-only #t))
+        (sudoku
+          '(1 2 3 7 8 9 5 6 4
+            4 5 6 1 2 3 8 9 7
+            7 8 9 4 5 6 2 3 1
+            9 6 4 • • • • • •
+            • • • • • • • • •
+            • • • • • • • • •
+            5 7 8 • • • • • •
+            • • • • • • • • •
+            • • • • • • • • •)))
+
+      (printline)
       (displayln "22154 solutions.")
 
       (parameterize ((count-only 'yes))
@@ -327,35 +374,6 @@
           (vector-set! board i 0)
           (sudoku (vector->list board))
           (vector-set! board i old-d)))
-
-      (printline)
-      (displayln "No solution. No field for digit 1 in row 3.")
-
-      (sudoku
-        '(1 • • • • • • • •  
-          • • • 1 • • • • •  
-          • • • • • • • • 2  
-          • • • • • • 1 • •  
-          • • • • • • • • •  
-          • • • • • • • • •   
-          • • • • • • • • •  
-          • • • • • • • 1 •  
-          • • • • • • • • •))
-
-      (printline)
-      (displayln "Replacing digit 2 by digit 1 yields a board with many solutions.")
-
-      (parameterize ((max-nr-of-solutions 5))
-        (sudoku
-          '(1 • • • • • • • •  
-            • • • 1 • • • • •  
-            • • • • • • • • 1  
-            • • • • • • 1 • •  
-            • • • • • • • • •  
-            • • • • • • • • •   
-            • • • • • • • • •  
-            • • • • • • • 1 •  
-            • • • • • • • • •)))
 
       ; The following example would count all complete sudoku boards.
       ; Do not uncomment it, for it would last too long, although it would run in constant space.
