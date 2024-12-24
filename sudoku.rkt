@@ -72,7 +72,7 @@ Argument ‹yes/no› is coerced to a Boolean: (and ‹yes/no› #t).
 
 Parameter : (max-nr-of-solutions) --> (or/c #f natural?)
             (max-nr-of-solutions ‹n›) --> void?
-‹n› : (or/c #f natural?) = #f
+‹n› : (or/c #f natural?) initial value : #f
 
 If this parameter is not #f, at most ‹n› solution are looked for, else all solutions are looked for.
 
@@ -176,6 +176,7 @@ the field to be selected for the inner loop must be looked for. Much more time i
            (when (zero? solutions-counter) (displayln "Solution(s)\n"))
            (print-board))
          (set! solutions-counter (add1 solutions-counter))
+         ; (when (zero? (modulo solutions-counter 100000)) (writeln solutions-counter))
          (define max (max-nr-of-solutions))
          (when (and max (>= solutions-counter max)) (exit)))
         (else

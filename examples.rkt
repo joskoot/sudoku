@@ -317,6 +317,21 @@
             • • • • • • • • •)))
 
       (printline)
+      (displayln "351040 solutions.")
+
+      (parameterize ((count-only #t))
+        (sudoku
+          '(1 2 3 7 8 9 5 6 4
+            4 5 6 1 2 3 8 9 7
+            7 8 9 4 5 6 2 3 1
+            5 1 4 • • • • • •
+            • • • • • • • • •
+            • • • • • • • • •
+            3 4 2 • • • • • •
+            • • • • • • • • •
+            • • • • • • • • •)))
+
+      (printline)
       (displayln "175336 solutions.")
 
       (parameterize ((count-only #t))
@@ -374,6 +389,18 @@
           (vector-set! board i 0)
           (sudoku (vector->list board))
           (vector-set! board i old-d)))
+
+      (parameterize ((count-only #t) (max-nr-of-solutions 1000))
+        (sudoku
+          '(1 2 3 4 5 6 7 8 9
+            4 5 6 7 8 9 1 2 3
+            7 8 9 1 2 3 4 5 6
+            2 • • • • • • • •
+            5 • • • • • • • •
+            8 • • • • • • • •
+            3 • • • • • • • •
+            6 • • • • • • • •
+            9 • • • • • • • •)))
 
       ; The following example would count all complete sudoku boards.
       ; Do not uncomment it, for it would last too long, although it would run in constant space.
