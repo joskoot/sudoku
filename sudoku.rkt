@@ -113,7 +113,7 @@ the field to be selected for the inner loop must be looked for. Much more time i
     ~r)
   (only-in math/number-theory factorize))
 
-(provide
+(provide print-counter
   (contract-out
     (Sudoku (-> board? natural?))
     (count-only Bool-parameter)
@@ -176,9 +176,12 @@ the field to be selected for the inner loop must be looked for. Much more time i
            (when (zero? solutions-counter) (displayln "Solution(s)\n"))
            (print-board))
          (set! solutions-counter (add1 solutions-counter))
-         ; (when (zero? (modulo solutions-counter 100000)) (writeln solutions-counter))
+         (when (and (print-counter) (zero? (modulo solutions-counter (print-counter))))
+           (writeln solutions-counter))
          (define max (max-nr-of-solutions))
-         (when (and max (>= solutions-counter max)) (exit)))
+         (when (and max (>= solutions-counter max))
+           (displayln "Possibly there are more solutions.")
+           (exit)))
         (else
           (define-values (field digits) (find-least-empty-field/digits empty-fields))
           (when field
@@ -192,6 +195,7 @@ the field to be selected for the inner loop must be looked for. Much more time i
 (define (coerce-to-boolean x) (and x #t))
 (define count-only (make-parameter #f coerce-to-boolean 'parameter:count-only))
 (define max-nr-of-solutions (make-parameter #f values 'parameter:max-nr-of-solutions))
+(define print-counter (make-parameter #f values 'print-counter))
 (define in-indices (in-range N↑2))
 (define in-digits (in-range 1 (add1 N)))
 (define (digit? d) (and (natural? d) (<= 1 d N)))

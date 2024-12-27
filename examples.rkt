@@ -4,12 +4,12 @@
 
 (require "sudoku.rkt" (only-in racket ~r))
 
-(count-only 'yes)
+(count-only #f)
 
 ; Examples
 ; ‘•’ is used for empty fields. It is not a period.
 
-(displayln "\nThe examples may take some minutes.\n")
+(displayln "\nThe examples may take half an hour.\n")
 (flush-output)
 (define sols 0)
 (define calls 0)
@@ -86,21 +86,9 @@
             • • • • • • • • •)))
 
       (printline)
-      (displayln "6670903752021072936960 solutions.")
+      (displayln "6670903752021072936960 solutions, compute 100000 only.")
 
-      (parameterize ((max-nr-of-solutions 5))
-        (sudoku
-          '(• • • • • • • • •
-            • • • • • • • • •
-            • • • • • • • • •
-            • • • • • • • • •
-            • • • • • • • • •
-            • • • • • • • • •
-            • • • • • • • • •
-            • • • • • • • • •
-            • • • • • • • • •)))
-
-      (parameterize ((count-only #t) (max-nr-of-solutions 10000))
+      (parameterize ((count-only #t) (max-nr-of-solutions 100000))
         (sudoku
           '(• • • • • • • • •
             • • • • • • • • •
@@ -175,6 +163,20 @@
           3 1 2   6 4 5   9 7 8
           • • •   • • •   3 1 •
           • • •   • • •   6 • •))
+
+      (printline)
+      (displayln "1 solution.")
+
+      (sudoku
+        '(• • • • • • • • •
+          • • • • • 3 • 8 5
+          • • 1 • 2 • • • •
+          • • • 5 • 7 • • •
+          • • 4 • • • 1 • •
+          • 9 • • • • • • •
+          5 • • • • • • 7 3
+          • • 2 • 1 • • • •
+          • • • • 4 • • • 9))
 
       (printline)
       (displayln "1 solution.")
@@ -347,6 +349,51 @@
             • • • • • • • • •)))
 
       (printline)
+      (displayln "11297664 solutions.")
+
+      (parameterize ((count-only 'yes))
+        (sudoku
+          '(1 2 3 4 5 6 7 8 9 
+            4 5 6 7 8 9 1 2 3 
+            7 8 9 1 2 3 4 5 6 
+            2 • • • • • • • • 
+            3 • • • • • • • • 
+            5 • • • • • • • • 
+            6 • • • • • • • • 
+            8 • • • • • • • • 
+            9 • • • • • • • •)))
+
+      (printline)
+      (displayln "6696000 solutions.")
+
+      (parameterize ((count-only #t))
+        (sudoku
+          '(1 2 3 4 5 6 7 8 9
+            4 5 6 7 8 9 1 2 3
+            7 8 9 1 2 3 4 5 6
+            2 • • • • • • • •
+            5 • • • • • • • •
+            8 • • • • • • • •
+            3 • • • • • • • •
+            6 • • • • • • • •
+            9 • • • • • • • •)))
+      
+      (printline)
+      (displayln "3438328 solutions.")
+
+      (parameterize ((count-only 'yes))
+        (sudoku
+          '(1 2 3 4 5 6 7 8 9
+            6 5 4 9 8 7 3 2 1
+            9 7 8 2 1 3 6 5 4
+            5 • • • • • • • •
+            7 • • • • • • • •
+            2 • • • • • • • •
+            3 • • • • • • • •
+            4 • • • • • • • •
+            8 • • • • • • • •)))
+
+      (printline)
       (displayln "22154 solutions.")
 
       (parameterize ((count-only 'yes))
@@ -389,18 +436,6 @@
           (vector-set! board i 0)
           (sudoku (vector->list board))
           (vector-set! board i old-d)))
-
-      (parameterize ((count-only #t) (max-nr-of-solutions 1000))
-        (sudoku
-          '(1 2 3 4 5 6 7 8 9
-            4 5 6 7 8 9 1 2 3
-            7 8 9 1 2 3 4 5 6
-            2 • • • • • • • •
-            5 • • • • • • • •
-            8 • • • • • • • •
-            3 • • • • • • • •
-            6 • • • • • • • •
-            9 • • • • • • • •)))
 
       ; The following example would count all complete sudoku boards.
       ; Do not uncomment it, for it would last too long, although it would run in constant space.
