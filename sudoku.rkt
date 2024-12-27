@@ -160,8 +160,10 @@ the field to be selected for the inner loop must be looked for. Much more time i
           (~r #:precision '(= 3) (/ nr-of-guesses solutions-counter))))))
   (printf "Times: cpu ~s ms, real ~s ms, gc ~s ms~n" cpu real gc)
   (when (>  solutions-counter 1)
-    (printf "Mean cpu time per solution: about ~a ms~n"
-      (~r #:precision '(= 3) (/ cpu solutions-counter))))
+    (printf "Mean cpu  time per solution: about ~a ms~n"
+      (~r #:precision '(= 3) (/ cpu solutions-counter)))
+    (printf "Mean real time per solution: about ~a ms~n"
+      (~r #:precision '(= 3) (/ real solutions-counter))))
   (newline)
   solutions-counter)
 
