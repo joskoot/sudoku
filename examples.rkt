@@ -4,8 +4,6 @@
 
 (require "sudoku.rkt" (only-in racket ~r))
 
-(count-only #f)
-
 ; Examples
 ; ‘•’ is used for empty fields. It is not a period.
 
@@ -86,9 +84,9 @@
             • • • • • • • • •)))
 
       (printline)
-      (displayln "6670903752021072936960 solutions, compute 100000 only.")
+      (displayln "6670903752021072936960 solutions, compute 1000000 solutions only.")
 
-      (parameterize ((count-only #t) (max-nr-of-solutions 100000))
+      (parameterize ((print-solutions #f) (max-nr-of-solutions 1000000))
         (sudoku
           '(• • • • • • • • •
             • • • • • • • • •
@@ -211,25 +209,9 @@
           • • •   • • •   • 7 •))
 
       (printline)
-      (displayln "1 solution.")
-
-      (sudoku
-        '(• 3 •   • • •   • • • 
-          • • •   1 • 5   • • • 
-          • 9 8   • • •   • 6 • 
-
-          8 • •   • 6 •   • • 3 
-          4 • •   • • 3   • • 1 
-          7 • •   • 2 •   • • • 
-
-          • 6 •   • • •   2 8 • 
-          • • •   4 • 9   • • 5 
-          • • •   • • •   • 7 •))
-
-      (printline)
       (displayln "Leaving out digit 6 in row 4, column 5 produces a board with 652 solutions.")
 
-      (parameterize ((count-only #t))
+      (parameterize ((print-solutions #f))
         (sudoku
           '(• 3 •   • • •   • • • 
             • • •   1 • 5   • • • 
@@ -246,7 +228,7 @@
       (printline)
       (displayln "6280 solutions.")
 
-      (parameterize ((count-only #t))
+      (parameterize ((print-solutions #f))
         (sudoku
           '(1 2 3 4 5 6 7 8 9
             4 5 6 7 8 9 1 2 3
@@ -261,7 +243,7 @@
       (printline)
       (displayln "The same number of solutions when erasing some digits.")
 
-      (parameterize ((count-only 'yes))
+      (parameterize ((print-solutions #f))
         (sudoku
           '(• 2 3 • 5 6 • 8 9 
             4 • 6 7 • 9 1 • 3 
@@ -276,7 +258,7 @@
       (printline)
       (displayln "492752 solutions.")
 
-      (parameterize ((count-only #t))
+      (parameterize ((print-solutions #f))
         (sudoku
           '(1 2 3 4 5 6 7 8 9
             4 5 6 7 8 9 1 2 3
@@ -291,7 +273,7 @@
       (printline)
       (displayln "535496 solutions.")
 
-      (parameterize ((count-only #t))
+      (parameterize ((print-solutions #f))
         (sudoku
           '(1 2 3 4 5 6 7 8 9
             4 5 6 7 8 9 1 2 3
@@ -306,7 +288,7 @@
       (printline)
       (displayln "535496 solutions, same as in the previous example.")
 
-      (parameterize ((count-only #t))
+      (parameterize ((print-solutions #f))
         (sudoku
           '(1 2 3 7 8 9 5 6 4
             4 5 6 1 2 3 8 9 7
@@ -321,7 +303,7 @@
       (printline)
       (displayln "351040 solutions.")
 
-      (parameterize ((count-only #t))
+      (parameterize ((print-solutions #f))
         (sudoku
           '(1 2 3 7 8 9 5 6 4
             4 5 6 1 2 3 8 9 7
@@ -336,7 +318,7 @@
       (printline)
       (displayln "175336 solutions.")
 
-      (parameterize ((count-only #t))
+      (parameterize ((print-solutions #f))
         (sudoku
           '(1 2 3 7 8 9 5 6 4
             4 5 6 1 2 3 8 9 7
@@ -351,7 +333,7 @@
       (printline)
       (displayln "11297664 solutions.")
 
-      (parameterize ((count-only 'yes))
+      (parameterize ((print-solutions #f))
         (sudoku
           '(1 2 3 4 5 6 7 8 9 
             4 5 6 7 8 9 1 2 3 
@@ -366,7 +348,7 @@
       (printline)
       (displayln "6696000 solutions.")
 
-      (parameterize ((count-only #t))
+      (parameterize ((print-solutions #f))
         (sudoku
           '(1 2 3 4 5 6 7 8 9
             4 5 6 7 8 9 1 2 3
@@ -381,7 +363,7 @@
       (printline)
       (displayln "3438328 solutions.")
 
-      (parameterize ((count-only 'yes))
+      (parameterize ((print-solutions #f))
         (sudoku
           '(1 2 3 4 5 6 7 8 9
             6 5 4 9 8 7 3 2 1
@@ -396,7 +378,7 @@
       (printline)
       (displayln "22154 solutions.")
 
-      (parameterize ((count-only 'yes))
+      (parameterize ((print-solutions #f))
         (sudoku
           '(• 2 3 • 5 6 • 8 9 
             4 • 6 7 • 9 1 • 3 
@@ -429,7 +411,7 @@
       (printline)
       (displayln "Omitting a digit from the previous example yields more than one solution.")
 
-      (parameterize ((count-only #t))
+      (parameterize ((print-solutions #f))
         (define board (apply vector board2))
         (for ((d (in-vector board)) (i (in-range 81)) #:when (number? (vector-ref board i)))
           (define old-d (vector-ref board i))
@@ -440,7 +422,7 @@
       ; The following example would count all complete sudoku boards.
       ; Do not uncomment it, for it would last too long, although it would run in constant space.
       #;
-      (parameterize ((count-only #t))
+      (parameterize ((print-solutions #f))
         (sudoku ; 6670903752021072936960 solutions:
           '(• • •  • • •  • • •
             • • •  • • •  • • •
