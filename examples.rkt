@@ -7,7 +7,7 @@
 ; Examples
 ; ‘•’ is used for empty fields. It is not a period.
 
-(displayln "\nThe examples may take half an hour.\n")
+(displayln "\nThe examples may take about an hour.\n")
 (flush-output)
 (define sols 0)
 (define calls 0)
@@ -71,17 +71,20 @@
       (printline)
       (displayln "Replacing digit 2 by digit 1 yields a board with many solutions.")
 
-      (parameterize ((max-nr-of-solutions 5))
-        (sudoku
-          '(1 • • • • • • • •  
-            • • • 1 • • • • •  
-            • • • • • • • • 1  
-            • • • • • • 1 • •  
-            • • • • • • • • •  
-            • • • • • • • • •   
-            • • • • • • • • •  
-            • • • • • • • 1 •  
-            • • • • • • • • •)))
+      (define board0
+        '(1 • • • • • • • •  
+          • • • 1 • • • • •  
+          • • • • • • • • 1  
+          • • • • • • 1 • •  
+          • • • • • • • • •  
+          • • • • • • • • •   
+          • • • • • • • • •  
+          • • • • • • • 1 •  
+          • • • • • • • • •))
+
+      (parameterize ((max-nr-of-solutions 5)) (sudoku board0))
+
+      (parameterize ((max-nr-of-solutions 1000000) (print-solutions #f)) (sudoku board0))
 
       (printline)
       (displayln "6670903752021072936960 solutions, compute 1000000 solutions only.")

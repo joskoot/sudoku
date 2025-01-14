@@ -121,11 +121,12 @@ the field to be selected must be looked for. Much more time is saved than lost.
 (define K 3)
 (define N (sqr K))
 (define N↑2 (sqr N))
+(define N+1 (add1 N))
 
 ; Top level variables:
 
 (define solutions-counter 0)
-(define nr-of-guesses 0)
+(define guesses-counter 0)
 
 ; Helpers:
 
@@ -163,13 +164,13 @@ the field to be selected must be looked for. Much more time is saved than lost.
   (cond
     ((zero? solutions-counter)
      (displayln "No solution found")
-     (printf "Nr of guesses ~s~n" nr-of-guesses))
+     (printf "Nr of guesses ~s~n" guesses-counter))
     (else
       (printf "Nr of solutions: ~s ~a~n" solutions-counter (factors solutions-counter))
-      (printf "Total nr of guesses: ~s ~a~n"nr-of-guesses (factors nr-of-guesses))
+      (printf "Total nr of guesses: ~s ~a~n"guesses-counter (factors guesses-counter))
       (when (> solutions-counter 1)
         (printf "Mean nr of guesses per solution: ~a~n"
-          (~r3 (/ nr-of-guesses solutions-counter))))))
+          (~r3 (/ guesses-counter solutions-counter))))))
   (printf "Times: cpu ~s ms, real ~s ms, gc ~s ms~n" cpu real gc)
   (when (>  solutions-counter 1)
     (printf "Mean cpu  time per solution: about ~a ms~n"
@@ -184,16 +185,19 @@ the field to be selected must be looked for. Much more time is saved than lost.
 (define (solve)
   (let/cc exit
     (set! solutions-counter 0)
-    (set! nr-of-guesses 0)
+    (set! guesses-counter 0)
     (define (solve empty-fields)
       (cond
         ((null? empty-fields)
-         (when (print-solutions)
-           (when (zero? solutions-counter) (displayln "Solution(s)\n"))
-           (print-board))
-         (set! solutions-counter (add1 solutions-counter))
-         (when (and (print-counter) (zero? (modulo solutions-counter (print-counter))))
-           (writeln solutions-counter))
+         (cond
+           ((print-solutions)
+            (when (zero? solutions-counter) (displayln "Solution(s)\n"))
+            (print-board)
+            (set! solutions-counter (add1 solutions-counter)))
+           (else
+             (set! solutions-counter (add1 solutions-counter))
+             (when (and (print-counter) (zero? (modulo solutions-counter (print-counter))))
+               (printf "Nr of solutions found so far: ~s~n" solutions-counter))))
          (define max (max-nr-of-solutions))
          (when (and max (>= solutions-counter max))
            (displayln "Possibly there are more solutions.")
@@ -202,7 +206,7 @@ the field to be selected must be looked for. Much more time is saved than lost.
           (define-values (field digits) (find-empty-field/digits empty-fields))
           (when field
             (for ((d (in-list digits)))
-              (set! nr-of-guesses (add1 nr-of-guesses))
+              (set! guesses-counter (add1 guesses-counter))
               (board-set! field d)
               (solve (remove field empty-fields))
               (board-set! field 0))))))
@@ -214,23 +218,23 @@ the field to be selected must be looked for. Much more time is saved than lost.
   (cond
     ((<= n 1) "")
     (else
-      (define facts (factorize n))
+      (define factorization (factorize n))
       (cond
-        ((and (= (length facts) 1) (= (cadar facts) 1)) "prime")
+        ((and (= (length factorization) 1) (= (cadar factorization) 1)) "prime")
         (else
           (define str-port (open-output-string))
           (parameterize ((current-output-port str-port))
             (display "= ")
-            (let loop ((factors facts) (first? #t))
-              (unless (null? factors)
+            (let loop ((factor/exponent factorization) (first? #t))
+              (unless (null? factor/exponent)
                 (unless first? (display "×"))
-                (define factor (car factors))
+                (define factor (car factor/exponent))
                 (define base (car factor))
                 (define exponent (cadr factor))
                 (cond
                   ((= exponent 1) (display base))
                   (else (printf "~s↑~s" base exponent)))
-                (loop (cdr factors) #f))))
+                (loop (cdr factor/exponent) #f))))
           (get-output-string str-port))))))
 #;
 (define (index->row/col index)
@@ -254,8 +258,8 @@ the field to be selected must be looked for. Much more time is saved than lost.
   (set! board (make-vector N↑2)) ; Initially filled with zeros.
   (for ((index in-indices) (d (in-list input)))
     (when (digit? d) ; Leave empty fields zero.
-      (define ns (vector-ref neighbours index))
-      (for ((n (in-list ns)))
+      (define neighbours (vector-ref neighbour-table index))
+      (for ((n (in-list neighbours)))
         (when (= d (board-ref n))
           (error 'Sudoku "invalid board: same neigbouring digit ~s at indices ~s and ~s" d n index)))
       (board-set! index d))))
@@ -275,7 +279,7 @@ the field to be selected must be looked for. Much more time is saved than lost.
 ; Two fields are neighbours if in the same row, the same column or the same subboard. neighbours is
 ; a vector of N↑2 elements, element i being a list of the indices of all neighbours of element i.
 
-(define neighbours
+(define neighbour-table
   (let ((neighbour-vector (build-vector N↑2 (λ (index) (mutable-seteq)))))
     (for* ((row in-rows) (col in-cols))
       (for ((r in-rows) #:unless (= r row))
@@ -290,43 +294,43 @@ the field to be selected must be looked for. Much more time is saved than lost.
     ; For speeding up convert to an immutable vector of lists.
     (apply vector-immutable (map set->list (vector->list neighbour-vector)))))
 
+; Finding an empty field with the least number of neighbours containing a digit. Return the field
+; index and the list of digits it can contain. Return (values #f #f) if there is an empty field for
+; which no digit is possible because its neighbours already contain all digits from 1 up to and
+; including 9.
+
 (define (find-empty-field/digits empty-fields)
-  (define free-digits (find-free-digits empty-fields))
-  (cond
-    ((not free-digits) (values #f #f)) 
-    (else
-      (find-empty-field/digits-help
-        (car empty-fields)
-        (car free-digits)
-        (cdr empty-fields)
-        (cdr free-digits)
-        (length (car free-digits))))))
-
-(define (find-empty-field/digits-help f ds empty-fields free-digit-lists n)
-  (cond
-    ((null? empty-fields) (values f ds))
-    (else
-      (define new-f (car empty-fields))
-      (define new-ds (car free-digit-lists))
-      (define new-n (length new-ds))
-      (cond
-        ((= new-n 1) (values new-f new-ds))
-        ((< new-n n)
-         (find-empty-field/digits-help
-           new-f new-ds (cdr empty-fields) (cdr free-digit-lists) new-n))
-        (else
-          (find-empty-field/digits-help
-            f ds (cdr empty-fields) (cdr free-digit-lists) n))))))
-
-(define (find-free-digits empty-fields)
-  (let/cc exit
-    (for/list ((field (in-list empty-fields)))
-      (define free-digits
-        (for/list
-          ((d in-digits)
-           #:when (for/and ((neighbour (in-list (vector-ref neighbours field))))
-                    (not (= (board-ref neighbour) d))))
-          d))
-      (if (null? free-digits) (exit #f) free-digits))))
+  (define (find-empty-field/digits empty-fields field digits nr-of-digits)
+    (cond
+      ((null? empty-fields) (values field digits))
+      (else
+        (define f (car empty-fields))
+        (define ds
+          (for/list
+            ((d in-digits)
+             #:when (for/and ((neighbour (in-list (vector-ref neighbour-table f))))
+                      (not (= (board-ref neighbour) d))))
+            d))
+        (define n (length ds))
+        (cond
+          ((zero? n) (values #f #f))
+          ((< n nr-of-digits) (find-empty-field/digits (cdr empty-fields) f ds n))
+          (else (find-empty-field/digits (cdr empty-fields) field digits nr-of-digits))))))
+  (find-empty-field/digits empty-fields #f #f N+1))
 
 ;=====================================================================================================
+
+; Example:
+#;
+(parameterize ((print-counter 10) (print-solutions #t) (max-nr-of-solutions 10))
+  (Sudoku
+    '(• • • • • • • • •
+      • • • • • • • • •
+      • • • • • • • • •
+      • • • • • • • • •
+      • • • • • • • • •
+      • • • • • • • • •
+      • • • • • • • • •
+      • • • • • • • • •
+      • • • • • • • • •)))
+
